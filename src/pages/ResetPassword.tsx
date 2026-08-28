@@ -33,7 +33,7 @@ export default function ResetPassword() {
     checkSession();
   }, []);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: { preventDefault: () => void; }) {
     e.preventDefault();
 
     setError('');
@@ -75,7 +75,9 @@ export default function ResetPassword() {
       );
 
       setError(
-        err?.message ||
+        err instanceof Error
+          ? err.message
+          :
           'Failed to update password.'
       );
     } finally {
