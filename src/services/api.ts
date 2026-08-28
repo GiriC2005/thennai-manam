@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase';
 
+import { supabase } from '@/lib/supabase';
 import type {
   Product,
   Category,
@@ -14,7 +14,9 @@ import type {
 
 const API_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, '') ||
-  (import.meta.env.DEV ? 'http://localhost:4000' : '');
+  (import.meta.env.DEV
+    ? 'http://localhost:4000'
+    : '');
 
 if (!API_URL) {
   console.error(
@@ -42,10 +44,24 @@ async function apiRequest(
 
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
 
+  if (sessionError) {
+    console.error(
+      '[AUTH] Failed to get Supabase session:',
+      sessionError
+    );
+
+    throw new Error('Unable to get current session');
+  }
+
+  /* -----------------------------------------------
+     Headers
+  ------------------------------------------------ */
+
   const headers = new Headers(
-    options.headers
+    options.headers || {}
   );
 
   headers.set(
@@ -64,10 +80,25 @@ async function apiRequest(
     );
   }
 
+  /* -----------------------------------------------
+     Request URL
+  ------------------------------------------------ */
+
   const url = `${API_URL}${path}`;
 
   console.log(
     `[API] ${options.method || 'GET'} ${url}`
+  );
+
+  console.log(
+    '[AUTH] Session:',
+    session
+      ? {
+          userId: session.user?.id,
+          email: session.user?.email,
+          expiresAt: session.expires_at,
+        }
+      : null
   );
 
   const res = await fetch(url, {
@@ -75,12 +106,32 @@ async function apiRequest(
     headers,
   });
 
+  /* -----------------------------------------------
+     Parse response
+  ------------------------------------------------ */
+
   const body = await res
     .json()
     .catch(() => ({}));
 
   /* -----------------------------------------------
-     Handle errors
+     Handle 401
+  ------------------------------------------------ */
+
+  if (res.status === 401) {
+    console.error(
+      '[API AUTH ERROR] 401',
+      body
+    );
+
+    throw new Error(
+      body?.error ||
+        'Invalid session. Please login again.'
+    );
+  }
+
+  /* -----------------------------------------------
+     Handle other errors
   ------------------------------------------------ */
 
   if (!res.ok) {
@@ -327,9 +378,10 @@ export async function getProductBySlug(
     error,
   } = await supabase
     .from('products')
-    .select(
-      '*, category:categories(*)'
-    )
+    .select(`
+      *,
+      category:categories(*)
+    `)
     .eq('slug', slug)
     .maybeSingle();
 
@@ -414,8 +466,8 @@ export async function createOrder(
   order: Omit<
     Order,
     'id' |
-    'created_at' |
-    'order_number'
+      'created_at' |
+      'order_number'
   >
 ): Promise<Order> {
   if (
@@ -696,15 +748,13 @@ export async function getAllReviews(): Promise<
       );
     } else {
       products =
-        (productData ||
-          []) as Product[];
+        (productData || []) as Product[];
     }
   }
 
   return data.map(
     (review: any) => ({
       ...review,
-
       product:
         products.find(
           (p) =>
@@ -814,9 +864,10 @@ export async function getAllProductsWithCategory(): Promise<
     error,
   } = await supabase
     .from('products')
-    .select(
-      '*, category:categories(*)'
-    )
+    .select(`
+      *,
+      category:categories(*)
+    `)
     .order(
       'created_at',
       {
@@ -961,19 +1012,14 @@ export async function getDashboardStats(): Promise<{
 export interface SalesReport {
   fromDate: string;
   toDate: string;
-
   totalRevenue: number;
   totalOrders: number;
-
   deliveredOrders: number;
   pendingOrders: number;
   cancelledOrders: number;
-
   totalProductsSold: number;
   totalCustomers: number;
-
   averageOrderValue: number;
-
   dailySales: {
     date: string;
     orders: number;
@@ -1305,19 +1351,14 @@ export async function getSalesReport(
   return {
     fromDate,
     toDate,
-
     totalRevenue,
     totalOrders,
-
     deliveredOrders,
     pendingOrders,
     cancelledOrders,
-
     totalProductsSold,
     totalCustomers,
-
     averageOrderValue,
-
     dailySales,
   };
 }
