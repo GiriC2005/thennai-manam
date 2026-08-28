@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import crypto from 'node:crypto';
+import cors from 'cors';
 import Razorpay from 'razorpay';
 import { createClient } from '@supabase/supabase-js';
 
@@ -9,51 +10,17 @@ dotenv.config({
   path: fileURLToPath(new URL('./.env', import.meta.url)),
 });
 
-const app = express();
-
 /* =====================================================
-   CORS
+   APP
 ===================================================== */
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-];
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-
-  res.setHeader(
-    'Access-Control-Allow-Credentials',
-    'true'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, PATCH, DELETE, OPTIONS'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
-  );
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-  next();
-});
-
-app.use(express.json());
+const app = express();
 
 /* =====================================================
    ENVIRONMENT
 ===================================================== */
+
+const port = process.env.PORT || 4000;
 
 const supabaseUrl =
   process.env.VITE_SUPABASE_URL;
@@ -63,6 +30,80 @@ const anonKey =
 
 const serviceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+/* =====================================================
+   CORS
+===================================================== */
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://thennaimanam.netlify.app',
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests without origin
+      // such as Postman/server-to-server requests
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log('CORS BLOCKED:', origin);
+
+      return callback(
+        new Error('Not allowed by CORS')
+      );
+    },
+
+    credentials: true,
+
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
+
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+    ],
+  })
+);
+
+/*
+  Explicitly handle preflight requests.
+*/
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+  ],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+  ],
+}));
+
+app.use(express.json());
+
+/* =====================================================
+   ENV VALIDATION
+===================================================== */
 
 if (!supabaseUrl || !anonKey || !serviceKey) {
   throw new Error(
@@ -92,7 +133,9 @@ const razorpay =
   process.env.RAZORPAY_KEY_ID &&
   process.env.RAZORPAY_KEY_SECRET
     ? new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
+        key_id:
+          process.env.RAZORPAY_KEY_ID,
+
         key_secret:
           process.env.RAZORPAY_KEY_SECRET,
       })
@@ -143,7 +186,10 @@ async function auth(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('AUTH ERROR:', error);
+    console.error(
+      'AUTH ERROR:',
+      error
+    );
 
     return res.status(401).json({
       error: 'Authentication failed',
@@ -185,7 +231,10 @@ async function admin(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('ADMIN ERROR:', error);
+    console.error(
+      'ADMIN ERROR:',
+      error
+    );
 
     return res.status(500).json({
       error: 'Admin authentication failed',
@@ -197,20 +246,31 @@ async function admin(req, res, next) {
    HEALTH CHECK
 ===================================================== */
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    ok: true,
-    razorpay: !!razorpay,
-    server: 'running',
-  });
-});
+app.get(
+  '/api/health',
+  (req, res) => {
+    res.json({
+      ok: true,
+      razorpay: !!razorpay,
+      server: 'running',
+    });
+  }
+);
 
-app.get('/api/test-admin-order-route', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'ADMIN ORDER ROUTE FILE IS RUNNING',
-  });
-});
+/* =====================================================
+   TEST ADMIN ORDER ROUTE
+===================================================== */
+
+app.get(
+  '/api/test-admin-order-route',
+  (req, res) => {
+    res.json({
+      ok: true,
+      message:
+        'ADMIN ORDER ROUTE FILE IS RUNNING',
+    });
+  }
+);
 
 /* =====================================================
    RAZORPAY - CREATE ORDER
@@ -350,23 +410,41 @@ app.post(
         .from('orders')
         .insert({
           user_id: req.user.id,
-          order_number: orderNumber(),
 
-          items: order.items,
-          subtotal: order.subtotal,
+          order_number:
+            orderNumber(),
+
+          items:
+            order.items,
+
+          subtotal:
+            order.subtotal,
+
           discount:
             order.discount || 0,
+
           delivery_charge:
             order.delivery_charge || 0,
-          total: order.total,
-          address: order.address,
 
-          payment_method: 'razorpay',
-          payment_status: 'paid',
-          order_status: 'confirmed',
+          total:
+            order.total,
+
+          address:
+            order.address,
+
+          payment_method:
+            'razorpay',
+
+          payment_status:
+            'paid',
+
+          order_status:
+            'confirmed',
 
           razorpay_order_id,
+
           razorpay_payment_id,
+
           razorpay_signature,
         })
         .select()
@@ -413,12 +491,20 @@ app.post(
         .insert({
           ...orderData,
 
-          user_id: req.user.id,
-          order_number: orderNumber(),
+          user_id:
+            req.user.id,
 
-          payment_method: 'cod',
-          payment_status: 'pending',
-          order_status: 'pending',
+          order_number:
+            orderNumber(),
+
+          payment_method:
+            'cod',
+
+          payment_status:
+            'pending',
+
+          order_status:
+            'pending',
         })
         .select()
         .single();
@@ -464,18 +550,23 @@ app.get(
           'user_id',
           req.user.id
         )
-        .order('created_at', {
-          ascending: false,
-        });
+        .order(
+          'created_at',
+          {
+            ascending: false,
+          }
+        );
 
       if (error) {
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
       return res.json({
-        orders: data || [],
+        orders:
+          data || [],
       });
     } catch (error) {
       console.error(
@@ -519,13 +610,15 @@ app.get(
 
       if (error) {
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
       if (!data) {
         return res.status(404).json({
-          error: 'Order not found',
+          error:
+            'Order not found',
         });
       }
 
@@ -549,7 +642,6 @@ app.get(
 
 /* =====================================================
    USER - CANCEL ORDER
-   ONLY pending / confirmed
 ===================================================== */
 
 app.patch(
@@ -557,7 +649,8 @@ app.patch(
   auth,
   async (req, res) => {
     try {
-      const orderId = req.params.id;
+      const orderId =
+        req.params.id;
 
       const {
         data: existingOrder,
@@ -565,24 +658,27 @@ app.patch(
       } = await db
         .from('orders')
         .select('*')
-        .eq('id', orderId)
-        .eq('user_id', req.user.id)
+        .eq(
+          'id',
+          orderId
+        )
+        .eq(
+          'user_id',
+          req.user.id
+        )
         .maybeSingle();
 
       if (fetchError) {
-        console.error(
-          'CANCEL ORDER FETCH ERROR:',
-          fetchError
-        );
-
         return res.status(500).json({
-          error: fetchError.message,
+          error:
+            fetchError.message,
         });
       }
 
       if (!existingOrder) {
         return res.status(404).json({
-          error: 'Order not found',
+          error:
+            'Order not found',
         });
       }
 
@@ -608,28 +704,30 @@ app.patch(
       } = await db
         .from('orders')
         .update({
-          order_status: 'cancelled',
+          order_status:
+            'cancelled',
         })
-        .eq('id', orderId)
-        .eq('user_id', req.user.id)
+        .eq(
+          'id',
+          orderId
+        )
+        .eq(
+          'user_id',
+          req.user.id
+        )
         .select()
         .single();
 
       if (error) {
-        console.error(
-          'CANCEL ORDER DB ERROR:',
-          error
-        );
-
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
       return res.json({
         order: data,
       });
-
     } catch (error) {
       console.error(
         'CANCEL ORDER ERROR:',
@@ -647,11 +745,6 @@ app.patch(
 
 /* =====================================================
    USER - UPDATE ORDER ADDRESS
-   ONLY pending / confirmed
-
-   IMPORTANT:
-   This route updates ONLY address.
-   It NEVER changes order_status.
 ===================================================== */
 
 app.patch(
@@ -659,12 +752,17 @@ app.patch(
   auth,
   async (req, res) => {
     try {
-      const orderId = req.params.id;
-      const { address } = req.body;
+      const orderId =
+        req.params.id;
+
+      const {
+        address,
+      } = req.body;
 
       if (!address) {
         return res.status(400).json({
-          error: 'Address is required',
+          error:
+            'Address is required',
         });
       }
 
@@ -673,25 +771,30 @@ app.patch(
         error: fetchError,
       } = await db
         .from('orders')
-        .select('id, order_status')
-        .eq('id', orderId)
-        .eq('user_id', req.user.id)
+        .select(
+          'id, order_status'
+        )
+        .eq(
+          'id',
+          orderId
+        )
+        .eq(
+          'user_id',
+          req.user.id
+        )
         .maybeSingle();
 
       if (fetchError) {
-        console.error(
-          'ADDRESS FETCH ERROR:',
-          fetchError
-        );
-
         return res.status(500).json({
-          error: fetchError.message,
+          error:
+            fetchError.message,
         });
       }
 
       if (!existingOrder) {
         return res.status(404).json({
-          error: 'Order not found',
+          error:
+            'Order not found',
         });
       }
 
@@ -719,26 +822,27 @@ app.patch(
         .update({
           address,
         })
-        .eq('id', orderId)
-        .eq('user_id', req.user.id)
+        .eq(
+          'id',
+          orderId
+        )
+        .eq(
+          'user_id',
+          req.user.id
+        )
         .select()
         .single();
 
       if (error) {
-        console.error(
-          'ADDRESS UPDATE DB ERROR:',
-          error
-        );
-
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
       return res.json({
         order: data,
       });
-
     } catch (error) {
       console.error(
         'UPDATE ADDRESS ERROR:',
@@ -779,13 +883,17 @@ app.get(
       } = await db
         .from('orders')
         .select('*')
-        .order('created_at', {
-          ascending: false,
-        });
+        .order(
+          'created_at',
+          {
+            ascending: false,
+          }
+        );
 
       if (error) {
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
@@ -795,7 +903,8 @@ app.get(
       );
 
       return res.json({
-        orders: data || [],
+        orders:
+          data || [],
       });
     } catch (error) {
       console.error(
@@ -831,23 +940,23 @@ app.get(
       } = await db
         .from('orders')
         .select('*')
-        .eq('id', orderId)
+        .eq(
+          'id',
+          orderId
+        )
         .maybeSingle();
 
       if (error) {
-        console.error(
-          'ADMIN SINGLE ORDER DB ERROR:',
-          error
-        );
-
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
       if (!data) {
         return res.status(404).json({
-          error: 'Order not found',
+          error:
+            'Order not found',
         });
       }
 
@@ -904,7 +1013,8 @@ app.patch(
       }
 
       const patch = {
-        order_status: status,
+        order_status:
+          status,
       };
 
       if (
@@ -929,13 +1039,9 @@ app.patch(
         .single();
 
       if (error) {
-        console.error(
-          'STATUS UPDATE DB ERROR:',
-          error
-        );
-
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
@@ -975,13 +1081,16 @@ app.patch(
 
       const patch = {
         courier_name:
-          courier_name?.trim() || null,
+          courier_name?.trim() ||
+          null,
 
         tracking_id:
-          tracking_id?.trim() || null,
+          tracking_id?.trim() ||
+          null,
 
         tracking_url:
-          tracking_url?.trim() || null,
+          tracking_url?.trim() ||
+          null,
       };
 
       const {
@@ -990,25 +1099,23 @@ app.patch(
       } = await db
         .from('orders')
         .update(patch)
-        .eq('id', req.params.id)
+        .eq(
+          'id',
+          req.params.id
+        )
         .select()
         .single();
 
       if (error) {
-        console.error(
-          'TRACKING UPDATE DB ERROR:',
-          error
-        );
-
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
       return res.json({
         order: data,
       });
-
     } catch (error) {
       console.error(
         'UPDATE TRACKING ERROR:',
@@ -1090,7 +1197,8 @@ app.get(
           customersError;
 
         return res.status(500).json({
-          error: error.message,
+          error:
+            error.message,
         });
       }
 
@@ -1105,7 +1213,10 @@ app.get(
               'cancelled'
           )
           .reduce(
-            (total, order) =>
+            (
+              total,
+              order
+            ) =>
               total +
               Number(
                 order.total || 0
@@ -1137,15 +1248,19 @@ app.get(
 
       return res.json({
         totalRevenue,
+
         totalOrders,
+
         pendingOrders,
+
         deliveredOrders,
+
         totalProducts:
           productCount || 0,
+
         totalCustomers:
           customerCount || 0,
       });
-
     } catch (error) {
       console.error(
         'ADMIN DASHBOARD ERROR:',
@@ -1162,7 +1277,7 @@ app.get(
 );
 
 /* =====================================================
-   404 - MUST BE LAST
+   404
 ===================================================== */
 
 app.use(
@@ -1176,7 +1291,38 @@ app.use(
     return res.status(404).json({
       error:
         'API route not found',
-      path: req.originalUrl,
+
+      path:
+        req.originalUrl,
+    });
+  }
+);
+
+/* =====================================================
+   ERROR HANDLER
+===================================================== */
+
+app.use(
+  (err, req, res, next) => {
+    console.error(
+      'SERVER ERROR:',
+      err
+    );
+
+    if (
+      err.message ===
+      'Not allowed by CORS'
+    ) {
+      return res.status(403).json({
+        error:
+          'CORS origin not allowed',
+      });
+    }
+
+    return res.status(500).json({
+      error:
+        err.message ||
+        'Internal server error',
     });
   }
 );
@@ -1185,24 +1331,21 @@ app.use(
    SERVER
 ===================================================== */
 
-const port =
-  process.env.PORT || 4000;
-
 app.listen(
   port,
   () => {
     console.log(
-      `API server running on http://localhost:${port}`
+      `API server running on port ${port}`
     );
 
     console.log(
-      `Frontend allowed: ${allowedOrigins.join(
-        ', '
-      )}`
+      'Allowed origins:',
+      allowedOrigins
     );
 
     console.log(
-      `Razorpay configured: ${!!razorpay}`
+      'Razorpay configured:',
+      !!razorpay
     );
   }
 );

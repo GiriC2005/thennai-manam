@@ -1,5 +1,5 @@
-
 import { supabase } from '@/lib/supabase';
+
 import type {
   Product,
   Category,
@@ -8,8 +8,19 @@ import type {
   Coupon,
 } from '@/lib/types';
 
-const API_BASE =
-  import.meta.env.VITE_API_URL || 'http://localhost:4000';
+/* =====================================================
+   API URL
+===================================================== */
+
+const API_URL =
+  import.meta.env.VITE_API_URL?.replace(/\/$/, '') ||
+  (import.meta.env.DEV ? 'http://localhost:4000' : '');
+
+if (!API_URL) {
+  console.error(
+    'VITE_API_URL is missing. Add it in Netlify Environment Variables and redeploy.'
+  );
+}
 
 /* =====================================================
    API REQUEST HELPER
@@ -19,13 +30,32 @@ async function apiRequest(
   path: string,
   options: RequestInit = {}
 ) {
+  if (!API_URL) {
+    throw new Error(
+      'API URL is not configured. Please set VITE_API_URL in Netlify.'
+    );
+  }
+
+  /* -----------------------------------------------
+     Get current Supabase session
+  ------------------------------------------------ */
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const headers = new Headers(options.headers);
+  const headers = new Headers(
+    options.headers
+  );
 
-  headers.set('Content-Type', 'application/json');
+  headers.set(
+    'Content-Type',
+    'application/json'
+  );
+
+  /* -----------------------------------------------
+     Add Supabase access token
+  ------------------------------------------------ */
 
   if (session?.access_token) {
     headers.set(
@@ -34,21 +64,34 @@ async function apiRequest(
     );
   }
 
-  const res = await fetch(
-    `${API_BASE}${path}`,
-    {
-      ...options,
-      headers,
-    }
+  const url = `${API_URL}${path}`;
+
+  console.log(
+    `[API] ${options.method || 'GET'} ${url}`
   );
+
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  });
 
   const body = await res
     .json()
     .catch(() => ({}));
 
+  /* -----------------------------------------------
+     Handle errors
+  ------------------------------------------------ */
+
   if (!res.ok) {
+    console.error(
+      `[API ERROR] ${res.status} ${res.statusText}`,
+      body
+    );
+
     throw new Error(
-      body.error || 'Request failed'
+      body?.error ||
+        `Request failed (${res.status})`
     );
   }
 
@@ -66,7 +109,9 @@ export async function createRazorpayOrder(
     '/api/payments/create-order',
     {
       method: 'POST',
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({
+        amount,
+      }),
     }
   );
 }
@@ -103,7 +148,9 @@ export async function createCodOrder(
    CATEGORIES
 ===================================================== */
 
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(): Promise<
+  Category[]
+> {
   const {
     data,
     error,
@@ -112,7 +159,9 @@ export async function getCategories(): Promise<Category[]> {
     .select('*')
     .order('name');
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data as Category[];
 }
@@ -199,28 +248,36 @@ export async function getProducts(
     case 'price-low':
       query = query.order(
         'price',
-        { ascending: true }
+        {
+          ascending: true,
+        }
       );
       break;
 
     case 'price-high':
       query = query.order(
         'price',
-        { ascending: false }
+        {
+          ascending: false,
+        }
       );
       break;
 
     case 'rating':
       query = query.order(
         'rating',
-        { ascending: false }
+        {
+          ascending: false,
+        }
       );
       break;
 
     case 'newest':
       query = query.order(
         'created_at',
-        { ascending: false }
+        {
+          ascending: false,
+        }
       );
       break;
 
@@ -228,11 +285,15 @@ export async function getProducts(
       query = query
         .order(
           'best_seller',
-          { ascending: false }
+          {
+            ascending: false,
+          }
         )
         .order(
           'rating',
-          { ascending: false }
+          {
+            ascending: false,
+          }
         );
   }
 
@@ -247,10 +308,16 @@ export async function getProducts(
     error,
   } = await query;
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data as Product[];
 }
+
+/* =====================================================
+   SINGLE PRODUCT
+===================================================== */
 
 export async function getProductBySlug(
   slug: string
@@ -266,7 +333,9 @@ export async function getProductBySlug(
     .eq('slug', slug)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data as Product | null;
 }
@@ -294,16 +363,30 @@ export async function getReviews(
     )
     .order(
       'created_at',
-      { ascending: false }
+      {
+        ascending: false,
+      }
     );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data as Review[];
 }
 
+/* =====================================================
+   ADD REVIEW
+===================================================== */
+
 export async function addReview(
-productId: string, userId: string, userName: string, userLocation: string, rating: number, comment: string): Promise<void> {
+  productId: string,
+  userId: string,
+  userName: string,
+  userLocation: string,
+  rating: number,
+  comment: string
+): Promise<void> {
   const {
     error,
   } = await supabase
@@ -318,11 +401,13 @@ productId: string, userId: string, userName: string, userLocation: string, ratin
       approved: false,
     });
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 /* =====================================================
-   ORDERS - CREATE
+   CREATE ORDER
 ===================================================== */
 
 export async function createOrder(
@@ -358,6 +443,8 @@ export async function createOrder(
 export async function getOrders(
   userId: string
 ): Promise<Order[]> {
+  void userId;
+
   const {
     orders,
   } = await apiRequest(
@@ -366,6 +453,10 @@ export async function getOrders(
 
   return orders as Order[];
 }
+
+/* =====================================================
+   SINGLE ORDER
+===================================================== */
 
 export async function getOrderById(
   id: string
@@ -380,10 +471,7 @@ export async function getOrderById(
 }
 
 /* =====================================================
-   CUSTOMER - CANCEL ORDER
-   Allowed only:
-   pending
-   confirmed
+   CANCEL ORDER
 ===================================================== */
 
 export async function cancelOrder(
@@ -402,10 +490,7 @@ export async function cancelOrder(
 }
 
 /* =====================================================
-   CUSTOMER - UPDATE ADDRESS
-   Allowed only:
-   pending
-   confirmed
+   UPDATE ORDER ADDRESS
 ===================================================== */
 
 export async function updateOrderAddress(
@@ -431,7 +516,9 @@ export async function updateOrderAddress(
    ADMIN ORDERS
 ===================================================== */
 
-export async function getAllOrders(): Promise<Order[]> {
+export async function getAllOrders(): Promise<
+  Order[]
+> {
   const {
     orders,
   } = await apiRequest(
@@ -440,6 +527,10 @@ export async function getAllOrders(): Promise<Order[]> {
 
   return orders as Order[];
 }
+
+/* =====================================================
+   ADMIN SINGLE ORDER
+===================================================== */
 
 export async function getAdminOrderById(
   id: string
@@ -454,7 +545,7 @@ export async function getAdminOrderById(
 }
 
 /* =====================================================
-   ADMIN - UPDATE ORDER STATUS
+   ADMIN UPDATE STATUS
 ===================================================== */
 
 export async function updateOrderStatus(
@@ -477,7 +568,7 @@ export async function updateOrderStatus(
 }
 
 /* =====================================================
-   ADMIN - UPDATE TRACKING
+   ADMIN UPDATE TRACKING
 ===================================================== */
 
 export async function updateOrderTracking(
@@ -488,16 +579,21 @@ export async function updateOrderTracking(
     tracking_url: string;
   }
 ): Promise<Order> {
-  const { order } = await apiRequest(
+  const {
+    order,
+  } = await apiRequest(
     `/api/admin/orders/${id}/tracking`,
     {
       method: 'PATCH',
-      body: JSON.stringify(tracking),
+      body: JSON.stringify(
+        tracking
+      ),
     }
   );
 
   return order as Order;
 }
+
 /* =====================================================
    COUPONS
 ===================================================== */
@@ -521,13 +617,15 @@ export async function validateCoupon(
     )
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data as Coupon | null;
 }
 
 /* =====================================================
-   ADMIN - REVIEWS
+   ADMIN REVIEWS
 ===================================================== */
 
 export async function getAllReviews(): Promise<
@@ -535,38 +633,61 @@ export async function getAllReviews(): Promise<
     product: Product | null;
   })[]
 > {
-  const { data, error } = await supabase
+  const {
+    data,
+    error,
+  } = await supabase
     .from('reviews')
     .select('*')
-    .order('created_at', {
-      ascending: false,
-    });
+    .order(
+      'created_at',
+      {
+        ascending: false,
+      }
+    );
 
   if (error) {
-    console.error('getAllReviews error:', error);
+    console.error(
+      'getAllReviews error:',
+      error
+    );
+
     throw error;
   }
 
-  if (!data || data.length === 0) {
+  if (
+    !data ||
+    data.length === 0
+  ) {
     return [];
   }
 
   const productIds = [
     ...new Set(
       data
-        .map((review: any) => review.product_id)
+        .map(
+          (review: any) =>
+            review.product_id
+        )
         .filter(Boolean)
     ),
   ];
 
   let products: Product[] = [];
 
-  if (productIds.length > 0) {
-    const { data: productData, error: productError } =
-      await supabase
-        .from('products')
-        .select('*')
-        .in('id', productIds);
+  if (
+    productIds.length > 0
+  ) {
+    const {
+      data: productData,
+      error: productError,
+    } = await supabase
+      .from('products')
+      .select('*')
+      .in(
+        'id',
+        productIds
+      );
 
     if (productError) {
       console.error(
@@ -574,56 +695,93 @@ export async function getAllReviews(): Promise<
         productError
       );
     } else {
-      products = (productData || []) as Product[];
+      products =
+        (productData ||
+          []) as Product[];
     }
   }
 
-  return data.map((review: any) => ({
-    ...review,
-    product:
-      products.find(
-        (p) => p.id === review.product_id
-      ) || null,
-  })) as (
+  return data.map(
+    (review: any) => ({
+      ...review,
+
+      product:
+        products.find(
+          (p) =>
+            p.id ===
+            review.product_id
+        ) || null,
+    })
+  ) as (
     Review & {
       product: Product | null;
     }
   )[];
 }
+
+/* =====================================================
+   APPROVE REVIEW
+===================================================== */
+
 export async function approveReview(
   id: string
 ): Promise<void> {
-  const { error } = await supabase
+  const {
+    error,
+  } = await supabase
     .from('reviews')
     .update({
       approved: true,
     })
-    .eq('id', id);
+    .eq(
+      'id',
+      id
+    );
 
   if (error) {
-    console.error('approveReview error:', error);
+    console.error(
+      'approveReview error:',
+      error
+    );
+
     throw error;
   }
 }
+
+/* =====================================================
+   DELETE REVIEW
+===================================================== */
 
 export async function deleteReview(
   id: string
 ): Promise<void> {
-  const { error } = await supabase
+  const {
+    error,
+  } = await supabase
     .from('reviews')
     .delete()
-    .eq('id', id);
+    .eq(
+      'id',
+      id
+    );
 
   if (error) {
-    console.error('deleteReview error:', error);
+    console.error(
+      'deleteReview error:',
+      error
+    );
+
     throw error;
   }
 }
+
 /* =====================================================
-   ADMIN - PROFILES
+   ADMIN PROFILES
 ===================================================== */
 
-export async function getAllProfiles(): Promise<any[]> {
+export async function getAllProfiles(): Promise<
+  any[]
+> {
   const {
     data,
     error,
@@ -632,19 +790,25 @@ export async function getAllProfiles(): Promise<any[]> {
     .select('*')
     .order(
       'created_at',
-      { ascending: false }
+      {
+        ascending: false,
+      }
     );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data;
 }
 
 /* =====================================================
-   ADMIN - PRODUCTS
+   ADMIN PRODUCTS
 ===================================================== */
 
-export async function getAllProductsWithCategory(): Promise<Product[]> {
+export async function getAllProductsWithCategory(): Promise<
+  Product[]
+> {
   const {
     data,
     error,
@@ -655,10 +819,14 @@ export async function getAllProductsWithCategory(): Promise<Product[]> {
     )
     .order(
       'created_at',
-      { ascending: false }
+      {
+        ascending: false,
+      }
     );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data as Product[];
 }
@@ -672,7 +840,9 @@ export async function createProduct(
     .from('products')
     .insert(product);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function updateProduct(
@@ -684,9 +854,14 @@ export async function updateProduct(
   } = await supabase
     .from('products')
     .update(updates)
-    .eq('id', id);
+    .eq(
+      'id',
+      id
+    );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function deleteProduct(
@@ -697,13 +872,18 @@ export async function deleteProduct(
   } = await supabase
     .from('products')
     .delete()
-    .eq('id', id);
+    .eq(
+      'id',
+      id
+    );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 /* =====================================================
-   ADMIN - CATEGORIES
+   ADMIN CATEGORIES
 ===================================================== */
 
 export async function createCategory(
@@ -715,7 +895,9 @@ export async function createCategory(
     .from('categories')
     .insert(category);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function updateCategory(
@@ -727,9 +909,14 @@ export async function updateCategory(
   } = await supabase
     .from('categories')
     .update(updates)
-    .eq('id', id);
+    .eq(
+      'id',
+      id
+    );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function deleteCategory(
@@ -740,9 +927,14 @@ export async function deleteCategory(
   } = await supabase
     .from('categories')
     .delete()
-    .eq('id', id);
+    .eq(
+      'id',
+      id
+    );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 /* =====================================================
@@ -761,9 +953,10 @@ export async function getDashboardStats(): Promise<{
     '/api/admin/dashboard'
   );
 }
-// ==========================================
-// ADMIN SALES REPORT
-// ==========================================
+
+/* =====================================================
+   SALES REPORT
+===================================================== */
 
 export interface SalesReport {
   fromDate: string;
@@ -788,59 +981,36 @@ export interface SalesReport {
   }[];
 }
 
-// ==========================================
-// ADMIN SALES REPORT
-// ==========================================
-
-export interface SalesReport {
-  fromDate: string;
-  toDate: string;
-
-  totalRevenue: number;
-  totalOrders: number;
-
-  deliveredOrders: number;
-  pendingOrders: number;
-  cancelledOrders: number;
-
-  totalProductsSold: number;
-  totalCustomers: number;
-
-  averageOrderValue: number;
-
-  dailySales: {
-    date: string;
-    orders: number;
-    revenue: number;
-  }[];
-}
+/* =====================================================
+   GET SALES REPORT
+===================================================== */
 
 export async function getSalesReport(
   fromDate: string,
   toDate: string
 ): Promise<SalesReport> {
-  if (!fromDate || !toDate) {
+  if (
+    !fromDate ||
+    !toDate
+  ) {
     throw new Error(
       'From date and To date are required'
     );
   }
 
-  if (fromDate > toDate) {
+  if (
+    fromDate > toDate
+  ) {
     throw new Error(
       'From date cannot be after To date'
     );
   }
 
-  // ==========================================
-  // DATE RANGE
-  // ==========================================
+  const startDate =
+    `${fromDate}T00:00:00`;
 
-  const startDate = `${fromDate}T00:00:00`;
-  const endDate = `${toDate}T23:59:59`;
-
-  // ==========================================
-  // GET ORDERS
-  // ==========================================
+  const endDate =
+    `${toDate}T23:59:59`;
 
   const {
     data: orders,
@@ -855,11 +1025,20 @@ export async function getSalesReport(
       order_status,
       created_at
     `)
-    .gte('created_at', startDate)
-    .lte('created_at', endDate)
-    .order('created_at', {
-      ascending: true,
-    });
+    .gte(
+      'created_at',
+      startDate
+    )
+    .lte(
+      'created_at',
+      endDate
+    )
+    .order(
+      'created_at',
+      {
+        ascending: true,
+      }
+    );
 
   if (error) {
     console.error(
@@ -870,11 +1049,12 @@ export async function getSalesReport(
     throw error;
   }
 
-  const safeOrders = orders || [];
+  const safeOrders =
+    orders || [];
 
-  // ==========================================
-  // ORDER COUNTS
-  // ==========================================
+  /* -----------------------------------------------
+     COUNTS
+  ------------------------------------------------ */
 
   const totalOrders =
     safeOrders.length;
@@ -884,7 +1064,8 @@ export async function getSalesReport(
       (order) =>
         String(
           order.order_status
-        ).toLowerCase() === 'delivered'
+        ).toLowerCase() ===
+        'delivered'
     ).length;
 
   const pendingOrders =
@@ -907,56 +1088,65 @@ export async function getSalesReport(
       (order) =>
         String(
           order.order_status
-        ).toLowerCase() === 'cancelled'
+        ).toLowerCase() ===
+        'cancelled'
     ).length;
 
-  // ==========================================
-  // REVENUE
-  // ==========================================
+  /* -----------------------------------------------
+     REVENUE
+  ------------------------------------------------ */
 
   const totalRevenue =
     safeOrders.reduce(
-      (sum, order) => {
+      (
+        sum,
+        order
+      ) => {
         const status =
           String(
             order.order_status
           ).toLowerCase();
 
-        // Cancelled orders should
-        // not count as revenue
-        if (status === 'cancelled') {
+        if (
+          status ===
+          'cancelled'
+        ) {
           return sum;
         }
 
         return (
           sum +
-          (Number(order.total) || 0)
+          (Number(
+            order.total
+          ) || 0)
         );
       },
       0
     );
 
-  // ==========================================
-  // AVERAGE ORDER VALUE
-  // ==========================================
+  /* -----------------------------------------------
+     AVERAGE ORDER VALUE
+  ------------------------------------------------ */
 
   const revenueOrders =
     safeOrders.filter(
       (order) =>
         String(
           order.order_status
-        ).toLowerCase() !== 'cancelled'
+        ).toLowerCase() !==
+        'cancelled'
     );
 
   const averageOrderValue =
-    revenueOrders.length > 0
+    revenueOrders.length >
+    0
       ? totalRevenue /
         revenueOrders.length
       : 0;
 
-  // ==========================================
-  // DAILY SALES
-  // ==========================================
+  /* -----------------------------------------------
+     DAILY SALES
+  ------------------------------------------------ */
 
   const dailyMap: Record<
     string,
@@ -966,70 +1156,100 @@ export async function getSalesReport(
     }
   > = {};
 
-  safeOrders.forEach((order) => {
-    const status =
-      String(
-        order.order_status
-      ).toLowerCase();
+  safeOrders.forEach(
+    (order) => {
+      const status =
+        String(
+          order.order_status
+        ).toLowerCase();
 
-    // Cancelled orders
-    // excluded from daily sales
-    if (status === 'cancelled') {
-      return;
+      if (
+        status ===
+        'cancelled'
+      ) {
+        return;
+      }
+
+      const date =
+        new Date(
+          order.created_at
+        )
+          .toISOString()
+          .split('T')[0];
+
+      if (
+        !dailyMap[date]
+      ) {
+        dailyMap[date] = {
+          orders: 0,
+          revenue: 0,
+        };
+      }
+
+      dailyMap[date].orders +=
+        1;
+
+      dailyMap[date].revenue +=
+        Number(
+          order.total
+        ) || 0;
     }
-
-    const date = new Date(
-      order.created_at
-    )
-      .toISOString()
-      .split('T')[0];
-
-    if (!dailyMap[date]) {
-      dailyMap[date] = {
-        orders: 0,
-        revenue: 0,
-      };
-    }
-
-    dailyMap[date].orders += 1;
-
-    dailyMap[date].revenue +=
-      Number(order.total) || 0;
-  });
+  );
 
   const dailySales =
-    Object.entries(dailyMap)
+    Object.entries(
+      dailyMap
+    )
       .sort(
-        ([dateA], [dateB]) =>
-          dateA.localeCompare(dateB)
+        (
+          [dateA],
+          [dateB]
+        ) =>
+          dateA.localeCompare(
+            dateB
+          )
       )
       .map(
-        ([date, value]) => ({
+        (
+          [
+            date,
+            value,
+          ]
+        ) => ({
           date,
-          orders: value.orders,
-          revenue: value.revenue,
+          orders:
+            value.orders,
+          revenue:
+            value.revenue,
         })
       );
 
-  // ==========================================
-  // PRODUCTS SOLD
-  // ==========================================
+  /* -----------------------------------------------
+     PRODUCTS SOLD
+  ------------------------------------------------ */
 
   const totalProductsSold =
     safeOrders.reduce(
-      (total, order) => {
+      (
+        total,
+        order
+      ) => {
         const status =
           String(
             order.order_status
           ).toLowerCase();
 
-        // Cancelled orders excluded
-        if (status === 'cancelled') {
+        if (
+          status ===
+          'cancelled'
+        ) {
           return total;
         }
 
         const items =
-          Array.isArray(order.items)
+          Array.isArray(
+            order.items
+          )
             ? order.items
             : [];
 
@@ -1038,27 +1258,25 @@ export async function getSalesReport(
             (
               itemTotal: number,
               item: any
-            ) => {
-              return (
-                itemTotal +
-                (Number(
-                  item.quantity
-                ) || 0)
-              );
-            },
+            ) =>
+              itemTotal +
+              (Number(
+                item.quantity
+              ) || 0),
             0
           );
 
         return (
-          total + itemQuantity
+          total +
+          itemQuantity
         );
       },
       0
     );
 
-  // ==========================================
-  // UNIQUE CUSTOMERS
-  // ==========================================
+  /* -----------------------------------------------
+     UNIQUE CUSTOMERS
+  ------------------------------------------------ */
 
   const customerIds =
     new Set(
@@ -1080,9 +1298,9 @@ export async function getSalesReport(
   const totalCustomers =
     customerIds.size;
 
-  // ==========================================
-  // FINAL REPORT
-  // ==========================================
+  /* -----------------------------------------------
+     RETURN
+  ------------------------------------------------ */
 
   return {
     fromDate,
