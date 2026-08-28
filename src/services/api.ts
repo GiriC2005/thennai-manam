@@ -1,5 +1,5 @@
-
 import { supabase } from '@/lib/supabase';
+
 import type {
   Product,
   Category,
@@ -15,7 +15,7 @@ import type {
 const API_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, '') ||
   (import.meta.env.DEV
-    ? 'http://localhost:4000'
+    ? 'https://thennai-manam-api.onrender.com'
     : '');
 
 if (!API_URL) {
@@ -60,14 +60,9 @@ async function apiRequest(
      Headers
   ------------------------------------------------ */
 
-  const headers = new Headers(
-    options.headers || {}
-  );
+  const headers = new Headers(options.headers || {});
 
-  headers.set(
-    'Content-Type',
-    'application/json'
-  );
+  headers.set('Content-Type', 'application/json');
 
   /* -----------------------------------------------
      Add Supabase access token
@@ -199,9 +194,7 @@ export async function createCodOrder(
    CATEGORIES
 ===================================================== */
 
-export async function getCategories(): Promise<
-  Category[]
-> {
+export async function getCategories(): Promise<Category[]> {
   const {
     data,
     error,
@@ -241,6 +234,8 @@ export async function getProducts(
       category:categories(*)
     `);
 
+  /* Category */
+
   if (filters?.category) {
     query = query.eq(
       'category_id',
@@ -248,38 +243,48 @@ export async function getProducts(
     );
   }
 
+  /* Search */
+
   if (filters?.search) {
-    query = query.or(
-      `name.ilike.%${filters.search}%,short_description.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
-    );
+    const search = filters.search
+      .replace(/,/g, '')
+      .trim();
+
+    if (search) {
+      query = query.or(
+        `name.ilike.%${search}%,short_description.ilike.%${search}%,description.ilike.%${search}%`
+      );
+    }
   }
 
-  if (
-    filters?.minPrice !== undefined
-  ) {
+  /* Minimum price */
+
+  if (filters?.minPrice !== undefined) {
     query = query.gte(
       'price',
       filters.minPrice
     );
   }
 
-  if (
-    filters?.maxPrice !== undefined
-  ) {
+  /* Maximum price */
+
+  if (filters?.maxPrice !== undefined) {
     query = query.lte(
       'price',
       filters.maxPrice
     );
   }
 
-  if (
-    filters?.minRating !== undefined
-  ) {
+  /* Minimum rating */
+
+  if (filters?.minRating !== undefined) {
     query = query.gte(
       'rating',
       filters.minRating
     );
   }
+
+  /* Featured */
 
   if (filters?.featured) {
     query = query.eq(
@@ -288,12 +293,16 @@ export async function getProducts(
     );
   }
 
+  /* Best Seller */
+
   if (filters?.bestSeller) {
     query = query.eq(
       'best_seller',
       true
     );
   }
+
+  /* Sorting */
 
   switch (filters?.sort) {
     case 'price-low':
@@ -346,7 +355,10 @@ export async function getProducts(
             ascending: false,
           }
         );
+      break;
   }
+
+  /* Limit */
 
   if (filters?.limit) {
     query = query.limit(
@@ -471,14 +483,11 @@ export async function createOrder(
   >
 ): Promise<Order> {
   if (
-    order.payment_method ===
-    'cod'
+    order.payment_method === 'cod'
   ) {
     const {
       order: created,
-    } = await createCodOrder(
-      order
-    );
+    } = await createCodOrder(order);
 
     return created as Order;
   }
@@ -495,6 +504,12 @@ export async function createOrder(
 export async function getOrders(
   userId: string
 ): Promise<Order[]> {
+  /*
+    userId is intentionally not sent.
+    Backend identifies the logged-in user
+    from the Supabase access token.
+  */
+
   void userId;
 
   const {
@@ -519,7 +534,7 @@ export async function getOrderById(
     `/api/orders/${id}`
   );
 
-  return order as Order;
+  return (order ?? null) as Order | null;
 }
 
 /* =====================================================
@@ -568,9 +583,7 @@ export async function updateOrderAddress(
    ADMIN ORDERS
 ===================================================== */
 
-export async function getAllOrders(): Promise<
-  Order[]
-> {
+export async function getAllOrders(): Promise<Order[]> {
   const {
     orders,
   } = await apiRequest(
@@ -593,7 +606,7 @@ export async function getAdminOrderById(
     `/api/admin/orders/${id}`
   );
 
-  return order as Order | null;
+  return (order ?? null) as Order | null;
 }
 
 /* =====================================================
@@ -637,9 +650,7 @@ export async function updateOrderTracking(
     `/api/admin/orders/${id}/tracking`,
     {
       method: 'PATCH',
-      body: JSON.stringify(
-        tracking
-      ),
+      body: JSON.stringify(tracking),
     }
   );
 
@@ -707,10 +718,7 @@ export async function getAllReviews(): Promise<
     throw error;
   }
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
+  if (!data || data.length === 0) {
     return [];
   }
 
@@ -727,9 +735,7 @@ export async function getAllReviews(): Promise<
 
   let products: Product[] = [];
 
-  if (
-    productIds.length > 0
-  ) {
+  if (productIds.length > 0) {
     const {
       data: productData,
       error: productError,
@@ -829,9 +835,7 @@ export async function deleteReview(
    ADMIN PROFILES
 ===================================================== */
 
-export async function getAllProfiles(): Promise<
-  any[]
-> {
+export async function getAllProfiles(): Promise<any[]> {
   const {
     data,
     error,
@@ -849,16 +853,14 @@ export async function getAllProfiles(): Promise<
     throw error;
   }
 
-  return data;
+  return data || [];
 }
 
 /* =====================================================
    ADMIN PRODUCTS
 ===================================================== */
 
-export async function getAllProductsWithCategory(): Promise<
-  Product[]
-> {
+export async function getAllProductsWithCategory(): Promise<Product[]> {
   const {
     data,
     error,
@@ -1012,14 +1014,18 @@ export async function getDashboardStats(): Promise<{
 export interface SalesReport {
   fromDate: string;
   toDate: string;
+
   totalRevenue: number;
   totalOrders: number;
   deliveredOrders: number;
   pendingOrders: number;
   cancelledOrders: number;
+
   totalProductsSold: number;
   totalCustomers: number;
+
   averageOrderValue: number;
+
   dailySales: {
     date: string;
     orders: number;
@@ -1035,18 +1041,17 @@ export async function getSalesReport(
   fromDate: string,
   toDate: string
 ): Promise<SalesReport> {
-  if (
-    !fromDate ||
-    !toDate
-  ) {
+  /* -----------------------------------------------
+     Validate dates
+  ------------------------------------------------ */
+
+  if (!fromDate || !toDate) {
     throw new Error(
       'From date and To date are required'
     );
   }
 
-  if (
-    fromDate > toDate
-  ) {
+  if (fromDate > toDate) {
     throw new Error(
       'From date cannot be after To date'
     );
@@ -1057,6 +1062,10 @@ export async function getSalesReport(
 
   const endDate =
     `${toDate}T23:59:59`;
+
+  /* -----------------------------------------------
+     Fetch orders
+  ------------------------------------------------ */
 
   const {
     data: orders,
@@ -1095,8 +1104,7 @@ export async function getSalesReport(
     throw error;
   }
 
-  const safeOrders =
-    orders || [];
+  const safeOrders = orders || [];
 
   /* -----------------------------------------------
      COUNTS
@@ -1184,8 +1192,7 @@ export async function getSalesReport(
     );
 
   const averageOrderValue =
-    revenueOrders.length >
-    0
+    revenueOrders.length > 0
       ? totalRevenue /
         revenueOrders.length
       : 0;
@@ -1223,17 +1230,14 @@ export async function getSalesReport(
           .toISOString()
           .split('T')[0];
 
-      if (
-        !dailyMap[date]
-      ) {
+      if (!dailyMap[date]) {
         dailyMap[date] = {
           orders: 0,
           revenue: 0,
         };
       }
 
-      dailyMap[date].orders +=
-        1;
+      dailyMap[date].orders += 1;
 
       dailyMap[date].revenue +=
         Number(
@@ -1351,14 +1355,18 @@ export async function getSalesReport(
   return {
     fromDate,
     toDate,
+
     totalRevenue,
     totalOrders,
     deliveredOrders,
     pendingOrders,
     cancelledOrders,
+
     totalProductsSold,
     totalCustomers,
+
     averageOrderValue,
+
     dailySales,
   };
 }
