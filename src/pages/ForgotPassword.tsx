@@ -41,7 +41,7 @@ export default function ForgotPassword() {
       console.error('Forgot password error:', err);
 
       setError(
-        err?.message ||
+        (err as Error)?.message ||
           'Failed to send reset email. Please try again.'
       );
     } finally {
