@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
@@ -97,10 +96,7 @@ export default function ProductDetails() {
               );
             })
             .catch((error) => {
-              console.error(
-                'RELATED PRODUCTS ERROR:',
-                error
-              );
+              console.error('RELATED PRODUCTS ERROR:', error);
               setRelated([]);
             });
         } else {
@@ -324,14 +320,26 @@ export default function ProductDetails() {
   ];
 
   return (
-    <div className="container-page py-4 sm:py-6 lg:py-8">
+    <div className="container-page py-4 sm:py-6 lg:py-5 xl:py-6">
 
-      {/* =================================================
+      {/* =========================
           BREADCRUMB
-      ================================================= */}
+      ========================= */}
 
-      <nav className="text-[11px] sm:text-sm text-ink-soft mb-4 sm:mb-6 flex items-center gap-1.5 sm:gap-2 flex-wrap">
-
+      <nav className="
+        text-[11px]
+        sm:text-sm
+        lg:text-xs
+        text-ink-soft
+        mb-4
+        sm:mb-6
+        lg:mb-4
+        flex
+        items-center
+        gap-1.5
+        sm:gap-2
+        flex-wrap
+      ">
         <Link
           to="/"
           className="hover:text-ink"
@@ -353,115 +361,148 @@ export default function ProductDetails() {
         <span className="text-ink line-clamp-1">
           {product.name}
         </span>
-
       </nav>
 
-      {/* =================================================
+      {/* =========================
           PRODUCT SECTION
-      ================================================= */}
+      ========================= */}
 
-      <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
+      <div className="
+        grid
+        lg:grid-cols-2
+        gap-6
+        lg:gap-8
+        xl:gap-10
+        items-start
+      ">
 
-        {/* =================================================
-            PRODUCT IMAGE
-        ================================================= */}
+       {/* =================================================
+    PRODUCT IMAGE
+================================================= */}
 
-        <div className="w-full">
+<div className="w-full">
 
-          {/* MOBILE IMAGE SIZE FIX */}
+  {/* MAIN PRODUCT IMAGE */}
 
-          <div className="
-            w-full
-            max-w-[280px]
-            sm:max-w-[420px]
-            lg:max-w-none
-            mx-auto
-            aspect-square
-            rounded-xl
-            sm:rounded-2xl
+  <div
+    className="
+      w-full
+      max-w-[280px]
+      sm:max-w-[420px]
+      lg:max-w-[480px]
+      lg:h-[350px]
+      xl:h-[350px]
+      mx-auto
+
+      aspect-square
+      lg:aspect-auto
+
+      rounded-xl
+      sm:rounded-2xl
+
+      overflow-hidden
+      bg-bg-warm
+
+      mb-3
+      sm:mb-4
+    "
+  >
+
+    {product.images?.length > 0 ? (
+      <img
+        src={product.images[activeImage]}
+        alt={product.name}
+        className="
+          w-full
+          h-full
+          object-cover
+        "
+      />
+    ) : (
+      <div
+        className="
+          w-full
+          h-full
+          flex
+          items-center
+          justify-center
+          text-ink-soft
+          text-sm
+        "
+      >
+        No image available
+      </div>
+    )}
+
+  </div>
+
+
+  {/* THUMBNAILS */}
+
+  {product.images?.length > 1 && (
+    <div
+      className="
+        flex
+        justify-center
+        gap-2
+        sm:gap-3
+        flex-wrap
+      "
+    >
+
+      {product.images.map((img, i) => (
+        <button
+          key={`${img}-${i}`}
+          type="button"
+          onClick={() => setActiveImage(i)}
+          className={`
+            w-12
+            h-12
+            sm:w-20
+            sm:h-20
+
+            rounded-lg
+            sm:rounded-xl
+
             overflow-hidden
-            bg-bg-warm
-            mb-3
-            sm:mb-4
-          ">
+            border-2
+            transition-colors
 
-            {product.images?.length > 0 ? (
-              <img
-                src={product.images[activeImage]}
-                alt={product.name}
-                className="
-                  w-full
-                  h-full
-                  object-cover
-                "
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-ink-soft text-sm">
-                No image available
-              </div>
-            )}
+            ${
+              activeImage === i
+                ? 'border-gold'
+                : 'border-transparent hover:border-ink/20'
+            }
+          `}
+        >
 
-          </div>
+          <img
+            src={img}
+            alt={`${product.name} ${i + 1}`}
+            className="
+              w-full
+              h-full
+              object-cover
+            "
+          />
 
-          {/* THUMBNAILS */}
+        </button>
+      ))}
 
-          {product.images?.length > 1 && (
-            <div className="
-              flex
-              justify-center
-              gap-2
-              sm:gap-3
-              flex-wrap
-            ">
+    </div>
+  )}
 
-              {product.images.map(
-                (img, i) => (
-                  <button
-                    key={`${img}-${i}`}
-                    type="button"
-                    onClick={() =>
-                      setActiveImage(i)
-                    }
-                    className={`
-
-                      w-12
-                      h-12
-                      sm:w-20
-                      sm:h-20
-
-                      rounded-lg
-                      sm:rounded-xl
-
-                      overflow-hidden
-                      border-2
-                      transition-colors
-
-                      ${
-                        activeImage === i
-                          ? 'border-gold'
-                          : 'border-transparent hover:border-ink/20'
-                      }
-                    `}
-                  >
-                    <img
-                      src={img}
-                      alt={`${product.name} ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                )
-              )}
-
-            </div>
-          )}
-
-        </div>
-
-        {/* =================================================
+</div>
+        {/* =========================
             PRODUCT INFO
-        ================================================= */}
+        ========================= */}
 
-        <div className="pt-1 sm:pt-0">
+        <div className="
+          pt-1
+          sm:pt-0
+          lg:pt-0
+          lg:max-w-[560px]
+        ">
 
           {/* CATEGORY */}
 
@@ -471,10 +512,12 @@ export default function ProductDetails() {
               className="
                 text-xs
                 sm:text-sm
+                lg:text-xs
                 text-gold
                 font-medium
                 mb-1
                 sm:mb-2
+                lg:mb-1
                 inline-block
               "
             >
@@ -488,11 +531,13 @@ export default function ProductDetails() {
             font-heading
             text-2xl
             sm:text-3xl
-            lg:text-4xl
+            lg:text-3xl
+            xl:text-4xl
             leading-tight
             text-ink
             mb-2
             sm:mb-3
+            lg:mb-2
           ">
             {product.name}
           </h1>
@@ -504,8 +549,10 @@ export default function ProductDetails() {
             items-center
             gap-2
             sm:gap-3
+            lg:gap-2
             mb-3
             sm:mb-4
+            lg:mb-3
           ">
 
             <StarRating
@@ -513,7 +560,12 @@ export default function ProductDetails() {
               size="sm"
             />
 
-            <span className="text-xs sm:text-sm text-ink-soft">
+            <span className="
+              text-xs
+              sm:text-sm
+              lg:text-xs
+              text-ink-soft
+            ">
               {product.rating} (
               {product.review_count} reviews)
             </span>
@@ -525,10 +577,13 @@ export default function ProductDetails() {
           <p className="
             text-sm
             sm:text-base
+            lg:text-sm
             text-ink-soft
             leading-relaxed
             mb-4
             sm:mb-6
+            lg:mb-4
+            max-w-[540px]
           ">
             {product.short_description}
           </p>
@@ -540,8 +595,10 @@ export default function ProductDetails() {
             items-baseline
             gap-2
             sm:gap-3
+            lg:gap-2
             mb-4
             sm:mb-6
+            lg:mb-4
             flex-wrap
           ">
 
@@ -549,6 +606,8 @@ export default function ProductDetails() {
               font-mono
               text-2xl
               sm:text-3xl
+              lg:text-2xl
+              xl:text-3xl
               font-bold
               text-ink
             ">
@@ -562,6 +621,7 @@ export default function ProductDetails() {
                     font-mono
                     text-sm
                     sm:text-lg
+                    lg:text-sm
                     text-ink-soft
                     line-through
                   ">
@@ -572,11 +632,13 @@ export default function ProductDetails() {
                     px-2
                     py-0.5
                     sm:py-1
+                    lg:py-0.5
                     rounded-full
                     bg-copper/10
                     text-copper
                     text-[10px]
                     sm:text-sm
+                    lg:text-xs
                     font-bold
                   ">
                     {discount}% OFF
@@ -588,7 +650,11 @@ export default function ProductDetails() {
 
           {/* STOCK */}
 
-          <div className="mb-4 sm:mb-6">
+          <div className="
+            mb-4
+            sm:mb-6
+            lg:mb-4
+          ">
 
             {outOfStock ? (
               <span className="
@@ -597,6 +663,7 @@ export default function ProductDetails() {
                 gap-1.5
                 text-xs
                 sm:text-sm
+                lg:text-xs
                 text-copper
                 font-medium
               ">
@@ -610,10 +677,11 @@ export default function ProductDetails() {
                 gap-1.5
                 text-xs
                 sm:text-sm
+                lg:text-xs
                 text-palm
                 font-medium
               ">
-                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5" />
                 In Stock ({product.stock} available)
               </span>
             )}
@@ -622,15 +690,21 @@ export default function ProductDetails() {
 
           {/* QUANTITY */}
 
-          <div className="mb-4 sm:mb-6">
+          <div className="
+            mb-4
+            sm:mb-6
+            lg:mb-4
+          ">
 
             <p className="
               text-xs
               sm:text-sm
+              lg:text-xs
               font-medium
               text-ink
               mb-1.5
               sm:mb-2
+              lg:mb-1.5
             ">
               Quantity
             </p>
@@ -653,23 +727,34 @@ export default function ProductDetails() {
                 className="
                   p-2
                   sm:p-2.5
+                  lg:p-2
                   hover:bg-ink/5
                   rounded-l-full
                   transition-colors
                 "
               >
-                <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Minus className="
+                  w-3.5
+                  h-3.5
+                  sm:w-4
+                  sm:h-4
+                  lg:w-3.5
+                  lg:h-3.5
+                " />
               </button>
 
               <span className="
                 px-3
                 sm:px-4
+                lg:px-3
                 font-mono
                 text-sm
                 sm:text-base
+                lg:text-sm
                 font-medium
                 w-10
                 sm:w-12
+                lg:w-10
                 text-center
               ">
                 {quantity}
@@ -691,13 +776,21 @@ export default function ProductDetails() {
                 className="
                   p-2
                   sm:p-2.5
+                  lg:p-2
                   hover:bg-ink/5
                   rounded-r-full
                   transition-colors
                   disabled:opacity-50
                 "
               >
-                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Plus className="
+                  w-3.5
+                  h-3.5
+                  sm:w-4
+                  sm:h-4
+                  lg:w-3.5
+                  lg:h-3.5
+                " />
               </button>
 
             </div>
@@ -713,8 +806,10 @@ export default function ProductDetails() {
             sm:flex
             sm:flex-wrap
             sm:gap-3
+            lg:gap-2
             mb-5
             sm:mb-6
+            lg:mb-4
           ">
 
             <button
@@ -726,16 +821,31 @@ export default function ProductDetails() {
                 flex-1
                 min-w-0
                 sm:min-w-[160px]
+                lg:min-w-[130px]
+                xl:min-w-[150px]
                 text-xs
                 sm:text-sm
+                lg:text-xs
+                xl:text-sm
                 px-3
                 sm:px-5
+                lg:px-4
                 disabled:opacity-50
                 disabled:cursor-not-allowed
               "
             >
-              <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Add to Cart</span>
+              <ShoppingCart className="
+                w-3.5
+                h-3.5
+                sm:w-4
+                sm:h-4
+                lg:w-3.5
+                lg:h-3.5
+              " />
+
+              <span>
+                Add to Cart
+              </span>
             </button>
 
             <button
@@ -747,10 +857,15 @@ export default function ProductDetails() {
                 flex-1
                 min-w-0
                 sm:min-w-[160px]
+                lg:min-w-[130px]
+                xl:min-w-[150px]
                 text-xs
                 sm:text-sm
+                lg:text-xs
+                xl:text-sm
                 px-3
                 sm:px-5
+                lg:px-4
                 disabled:opacity-50
                 disabled:cursor-not-allowed
               "
@@ -764,6 +879,7 @@ export default function ProductDetails() {
               className="
                 p-2.5
                 sm:p-3
+                lg:p-2.5
                 rounded-full
                 border
                 border-ink/15
@@ -774,11 +890,19 @@ export default function ProductDetails() {
               aria-label="Wishlist"
             >
               <Heart
-                className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                  wished
-                    ? 'fill-copper text-copper'
-                    : 'text-ink'
-                }`}
+                className={`
+                  w-4
+                  h-4
+                  sm:w-5
+                  sm:h-5
+                  lg:w-4
+                  lg:h-4
+                  ${
+                    wished
+                      ? 'fill-copper text-copper'
+                      : 'text-ink'
+                  }
+                `}
               />
             </button>
 
@@ -791,8 +915,10 @@ export default function ProductDetails() {
             grid-cols-3
             gap-2
             sm:gap-3
+            lg:gap-2
             pt-4
             sm:pt-6
+            lg:pt-4
             border-t
             border-ink/10
           ">
@@ -820,11 +946,16 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* =================================================
+      {/* =========================
           PRODUCT TABS
-      ================================================= */}
+      ========================= */}
 
-      <div className="mt-8 sm:mt-12 lg:mt-16">
+      <div className="
+        mt-8
+        sm:mt-12
+        lg:mt-10
+        xl:mt-12
+      ">
 
         <div className="
           flex
@@ -835,6 +966,7 @@ export default function ProductDetails() {
           scrollbar-hide
           mb-4
           sm:mb-6
+          lg:mb-4
         ">
 
           {tabs.map((tab) => (
@@ -845,21 +977,19 @@ export default function ProductDetails() {
                 setActiveTab(tab.key)
               }
               className={`
-
                 px-3
                 sm:px-4
-
+                lg:px-3
                 py-2.5
                 sm:py-3
-
+                lg:py-2.5
                 text-[11px]
                 sm:text-sm
-
+                lg:text-xs
                 font-medium
                 whitespace-nowrap
                 border-b-2
                 transition-colors
-
                 ${
                   activeTab === tab.key
                     ? 'border-palm text-palm'
@@ -880,6 +1010,8 @@ export default function ProductDetails() {
           text-ink-soft
           leading-relaxed
           text-sm
+          lg:text-xs
+          xl:text-sm
         ">
 
           {activeTab === 'description' && (
@@ -921,19 +1053,26 @@ export default function ProductDetails() {
 
       </div>
 
-      {/* =================================================
+      {/* =========================
           REVIEWS
-      ================================================= */}
+      ========================= */}
 
-      <div className="mt-8 sm:mt-12 lg:mt-16">
+      <div className="
+        mt-8
+        sm:mt-12
+        lg:mt-10
+        xl:mt-12
+      ">
 
         <h2 className="
           font-heading
           text-xl
           sm:text-2xl
+          lg:text-xl
           text-ink
           mb-4
           sm:mb-6
+          lg:mb-4
         ">
           Customer Reviews ({reviews.length})
         </h2>
@@ -942,22 +1081,39 @@ export default function ProductDetails() {
 
           <form
             onSubmit={handleSubmitReview}
-            className="card p-4 sm:p-6 mb-6 sm:mb-8"
+            className="
+              card
+              p-4
+              sm:p-6
+              lg:p-5
+              mb-6
+              sm:mb-8
+              lg:mb-6
+            "
           >
 
             <h3 className="
               font-heading
               text-base
               sm:text-lg
+              lg:text-base
               text-ink
               mb-4
+              lg:mb-3
             ">
               Write a Review
             </h3>
 
-            <div className="mb-4">
+            <div className="mb-4 lg:mb-3">
 
-              <p className="text-xs sm:text-sm font-medium text-ink mb-2">
+              <p className="
+                text-xs
+                sm:text-sm
+                lg:text-xs
+                font-medium
+                text-ink
+                mb-2
+              ">
                 Your Rating
               </p>
 
@@ -978,11 +1134,19 @@ export default function ProductDetails() {
                       }
                     >
                       <Star
-                        className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                          r <= reviewForm.rating
-                            ? 'fill-gold text-gold'
-                            : 'text-ink/20'
-                        }`}
+                        className={`
+                          w-5
+                          h-5
+                          sm:w-6
+                          sm:h-6
+                          lg:w-5
+                          lg:h-5
+                          ${
+                            r <= reviewForm.rating
+                              ? 'fill-gold text-gold'
+                              : 'text-ink/20'
+                          }
+                        `}
                       />
                     </button>
                   )
@@ -992,11 +1156,19 @@ export default function ProductDetails() {
 
             </div>
 
-            <div className="mb-4">
+            <div className="mb-4 lg:mb-3">
 
               <label
                 htmlFor="review-location"
-                className="block text-xs sm:text-sm font-medium text-ink mb-2"
+                className="
+                  block
+                  text-xs
+                  sm:text-sm
+                  lg:text-xs
+                  font-medium
+                  text-ink
+                  mb-2
+                "
               >
                 Your Location
               </label>
@@ -1019,11 +1191,19 @@ export default function ProductDetails() {
 
             </div>
 
-            <div className="mb-4">
+            <div className="mb-4 lg:mb-3">
 
               <label
                 htmlFor="review-comment"
-                className="block text-xs sm:text-sm font-medium text-ink mb-2"
+                className="
+                  block
+                  text-xs
+                  sm:text-sm
+                  lg:text-xs
+                  font-medium
+                  text-ink
+                  mb-2
+                "
               >
                 Your Review
               </label>
@@ -1049,7 +1229,10 @@ export default function ProductDetails() {
             <button
               type="submit"
               disabled={submittingReview}
-              className="btn-primary disabled:opacity-50"
+              className="
+                btn-primary
+                disabled:opacity-50
+              "
             >
               {submittingReview
                 ? 'Submitting...'
@@ -1060,9 +1243,23 @@ export default function ProductDetails() {
 
         ) : (
 
-          <div className="card p-4 sm:p-6 mb-6 sm:mb-8 text-center">
+          <div className="
+            card
+            p-4
+            sm:p-6
+            lg:p-5
+            mb-6
+            sm:mb-8
+            lg:mb-6
+            text-center
+          ">
 
-            <p className="text-sm text-ink-soft mb-3">
+            <p className="
+              text-sm
+              lg:text-xs
+              text-ink-soft
+              mb-3
+            ">
               Please sign in to write a review.
             </p>
 
@@ -1079,28 +1276,51 @@ export default function ProductDetails() {
 
         {reviews.length === 0 ? (
 
-          <p className="text-sm text-ink-soft text-center py-8">
+          <p className="
+            text-sm
+            lg:text-xs
+            text-ink-soft
+            text-center
+            py-8
+          ">
             No reviews yet. Be the first to review!
           </p>
 
         ) : (
 
-          <div className="space-y-3 sm:space-y-4">
+          <div className="
+            space-y-3
+            sm:space-y-4
+            lg:space-y-3
+          ">
 
             {reviews.map((review) => (
 
               <div
                 key={review.id}
-                className="card p-4 sm:p-6"
+                className="
+                  card
+                  p-4
+                  sm:p-6
+                  lg:p-4
+                "
               >
 
-                <div className="flex items-start gap-3 sm:gap-4">
+                <div className="
+                  flex
+                  items-start
+                  gap-3
+                  sm:gap-4
+                  lg:gap-3
+                ">
 
                   <div className="
                     w-9
                     h-9
                     sm:w-10
                     sm:h-10
+                    lg:w-9
+                    lg:h-9
                     rounded-full
                     bg-gold/20
                     flex
@@ -1116,7 +1336,10 @@ export default function ProductDetails() {
                       ?.toUpperCase() || 'A'}
                   </div>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="
+                    flex-1
+                    min-w-0
+                  ">
 
                     <div className="
                       flex
@@ -1126,11 +1349,22 @@ export default function ProductDetails() {
                       mb-1
                     ">
 
-                      <p className="font-medium text-sm text-ink">
+                      <p className="
+                        font-medium
+                        text-sm
+                        lg:text-xs
+                        text-ink
+                      ">
                         {review.user_name}
                       </p>
 
-                      <span className="text-[10px] sm:text-xs text-ink-soft whitespace-nowrap">
+                      <span className="
+                        text-[10px]
+                        sm:text-xs
+                        lg:text-[10px]
+                        text-ink-soft
+                        whitespace-nowrap
+                      ">
                         {formatDate(
                           review.created_at
                         )}
@@ -1139,7 +1373,13 @@ export default function ProductDetails() {
                     </div>
 
                     {review.user_location && (
-                      <p className="text-[10px] sm:text-xs text-ink-soft mb-2">
+                      <p className="
+                        text-[10px]
+                        sm:text-xs
+                        lg:text-[10px]
+                        text-ink-soft
+                        mb-2
+                      ">
                         {review.user_location}
                       </p>
                     )}
@@ -1149,7 +1389,14 @@ export default function ProductDetails() {
                       size="sm"
                     />
 
-                    <p className="text-xs sm:text-sm text-ink-soft mt-2 leading-relaxed">
+                    <p className="
+                      text-xs
+                      sm:text-sm
+                      lg:text-xs
+                      text-ink-soft
+                      mt-2
+                      leading-relaxed
+                    ">
                       {review.comment}
                     </p>
 
@@ -1167,21 +1414,27 @@ export default function ProductDetails() {
 
       </div>
 
-      {/* =================================================
+      {/* =========================
           RELATED PRODUCTS
-      ================================================= */}
+      ========================= */}
 
       {related.length > 0 && (
 
-        <div className="mt-10 sm:mt-16">
+        <div className="
+          mt-10
+          sm:mt-16
+          lg:mt-12
+        ">
 
           <h2 className="
             font-heading
             text-xl
             sm:text-2xl
+            lg:text-xl
             text-ink
             mb-4
             sm:mb-6
+            lg:mb-4
           ">
             Related Products
           </h2>
@@ -1192,7 +1445,7 @@ export default function ProductDetails() {
             lg:grid-cols-4
             gap-3
             sm:gap-4
-            lg:gap-6
+            lg:gap-4
           ">
 
             {related.map((p) => (
@@ -1232,6 +1485,8 @@ function TrustBadge({
         h-4
         sm:w-5
         sm:h-5
+        lg:w-4
+        lg:h-4
         text-palm
         mx-auto
         mb-1
@@ -1240,6 +1495,7 @@ function TrustBadge({
       <p className="
         text-[10px]
         sm:text-xs
+        lg:text-[10px]
         font-medium
         text-ink
       ">
@@ -1249,6 +1505,7 @@ function TrustBadge({
       <p className="
         text-[8px]
         sm:text-[10px]
+        lg:text-[9px]
         text-ink-soft
       ">
         {sub}
@@ -1257,4 +1514,3 @@ function TrustBadge({
     </div>
   );
 }
-

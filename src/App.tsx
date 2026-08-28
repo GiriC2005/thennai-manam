@@ -37,7 +37,8 @@ import AdminReviews from '@/pages/admin/AdminReviews';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminOrderDetails from '@/pages/admin/AdminOrderDetails';
 import Reports from '@/pages/admin/AdminReports';
-
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 function App() {
   return (
     <BrowserRouter>
@@ -55,6 +56,15 @@ function App() {
           <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route
+  path="/forgot-password"
+  element={<ForgotPassword />}
+/>
+
+<Route
+  path="/reset-password"
+  element={<ResetPassword />}
+/>
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />

@@ -210,6 +210,13 @@ export default function Login() {
                   )}
                 </button>
 
+                <Link
+  to="/forgot-password"
+  className="text-sm text-palm hover:underline"
+>
+  Forgot Password?
+</Link>
+
               </div>
             </div>
 

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sprout, Handshake, MapPin, FlaskConical } from 'lucide-react';
 
 const stats = [
-  { value: '3rd', label: 'Generation' },
+  { value: '1st', label: 'Quality' },
   { value: '40+', label: 'Partner Farms' },
   { value: '~1 Day', label: 'Tree to Bottle' },
   { value: '0', label: 'Preservatives' },

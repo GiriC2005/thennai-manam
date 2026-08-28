@@ -239,7 +239,7 @@ export default function Footer() {
           <p className="text-bg/50 text-xs">
             © {new Date().getFullYear()}
             {' '}
-            Pollachi Coconut Oil.
+            Thennai Manam Coconut Oil.
             All rights reserved.
           </p>
 

@@ -7,7 +7,7 @@ import ProductCard from '@/components/ProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import StarRating from '@/components/StarRating';
 import { formatPrice } from '@/lib/utils';
-
+import heroimg from '@/assets/hero.png';
 export default function Home() {
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -56,7 +56,7 @@ export default function Home() {
         </div>
 
         <h1 className="font-heading text-4xl lg:text-3x2 font-semibold text-ink leading-tight mb-2">
-          மரத்தில் ஆட்டிய <br/> தூய்மை
+          மரச்செக்கில் ஆட்டிய <br/> தூய்மை
         </h1>
 
         <p className="font-heading text-3xl lg:text-1xl text-ink-soft mb-6">
@@ -78,41 +78,42 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-4 gap-4 mt-12 pt-8 border-t border-ink/10">
-          <Stat value="3rd" label="Generation" />
+        { <div className="grid grid-cols-4 gap-4 mt-12 pt-8 border-t border-ink/10">
           <Stat value="40+" label="Partner Farms" />
+          <Stat value="1st" label="Quality" />
           <Stat value="~1 Day" label="Tree to Bottle" />
           <Stat value="0" label="Preservatives" />
-        </div>
+        </div> }
       </div>
 
       {/* Hero image */}
-      <div className="relative animate-fade-in -translate-y-10">
-        <div className="relative aspect-[6/4] rounded-3xl overflow-hidden shadow-3xl">
-          <img
-            src="https://images.pexels.com/photos/17407146/pexels-photo-17407146.jpeg?auto=compress&cs=tinysrgb&h=900&w=720"
-            alt="Pollachi coconut oil bottle"
-            className="w-full h-full object-cover"
-          />
+      {/* Hero image */}
+<div className="relative animate-fade-in lg:-translate-y-10">
+  <div className="relative aspect-[6/4] rounded-3xl overflow-hidden shadow-3xl">
+    <img
+      src={heroimg}
+      alt="Pollachi coconut oil bottle"
+      className="w-full h-full object-cover"
+    />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/20 via-transparent to-transparent" />
-        </div>
+    <div className="absolute inset-0 bg-gradient-to-t from-ink/20 via-transparent to-transparent" />
+  </div>
 
-        {/* Floating card */}
-        <div className="absolute -bottom-4 -left-4 lg:-left-8 bg-card rounded-2xl shadow-xl p-4 border border-ink/5 max-w-[200px] animate-float">
-          <div className="flex items-center gap-2 mb-1">
-            <StarRating rating={5} size="sm" />
-          </div>
+  {/* Floating card */}
+  {/* <div className="absolute -bottom-4 -left-4 lg:-left-8 bg-card rounded-2xl shadow-xl p-4 border border-ink/5 max-w-[200px] animate-float">
+    <div className="flex items-center gap-1 mb-0.5">
+  <StarRating rating={5} size="sm" />
+</div>
 
-          <p className="text-xs text-ink-soft leading-relaxed">
-            "Pure and authentic — this is how coconut oil should taste."
-          </p>
+<p className="text-[6px] sm:text-[10px] lg:text-xs text-ink-soft leading-tight">
+  "Pure and authentic — this is how coconut oil should taste."
+</p>
 
-          <p className="text-xs text-ink font-medium mt-1">
-            — Lakshmi, Coimbatore
-          </p>
-        </div>
-      </div>
+<p className="text-[6px] sm:text-[10px] lg:text-xs text-ink font-medium mt-0.5">
+  — Dharun
+</p>
+  </div> */}
+</div>
 
     </div>
   </div>
@@ -304,10 +305,47 @@ export default function Home() {
 }
 
 function Stat({ value, label }: { value: string; label: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const target = parseInt(value.replace(/\D/g, ''), 10) || 0;
+    const duration = 1500;
+    const steps = 50;
+    const increment = target / steps;
+
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+
+      if (current >= target) {
+        current = target;
+        clearInterval(timer);
+      }
+
+      setCount(Math.floor(current));
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  const prefix = value.includes('~') ? '~' : '';
+  const suffix = value.includes('+')
+    ? '+'
+    : value.includes('st')
+    ? 'st'
+    : '';
+
   return (
-    <div>
-      <p className="font-heading text-xl lg:text-2xl text-ink font-semibold">{value}</p>
-      <p className="text-xs text-ink-soft">{label}</p>
+    
+      <div className="text-center">
+      <p className="font-heading text-xl lg:text-2xl text-ink font-semibold">
+        {prefix}{count}{suffix}
+      </p>
+
+      <p className="text-xs text-ink-soft">
+        {label}
+      </p>
     </div>
   );
 }
