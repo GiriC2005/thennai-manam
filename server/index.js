@@ -40,6 +40,7 @@ const allowedOrigins = [
   'http://localhost:5174',
   'https://thennaimanam.netlify.app',,
   'https://thennai-manam-api.onrender.com',
+  'https://thennai-manam.vercel.app'
   
 
 ];
