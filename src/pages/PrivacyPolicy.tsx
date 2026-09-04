@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
       <h2 className="font-heading text-xl text-ink mt-6 mb-2">Data Security</h2>
       <p>Your data is stored securely and encrypted. We use Supabase for authentication and database management, which provides enterprise-grade security.</p>
       <h2 className="font-heading text-xl text-ink mt-6 mb-2">Your Rights</h2>
-      <p>You can request access to, correction of, or deletion of your personal data at any time by contacting us at hello@pollachicoconutoil.com.</p>
+      <p>You can request access to, correction of, or deletion of your personal data at any time by contacting us at info.thennaimanam@gmail.com.</p>
       <h2 className="font-heading text-xl text-ink mt-6 mb-2">Cookies</h2>
       <p>We use essential cookies to maintain your shopping cart and authentication session. We do not use tracking cookies for advertising.</p>
     </PolicyPage>

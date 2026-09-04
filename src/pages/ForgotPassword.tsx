@@ -1,48 +1,60 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, Send } from 'lucide-react';
 
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 
 export default function ForgotPassword() {
+  const { resetPassword } = useAuth();
+  const { showToast } = useToast();
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSubmit(e: { preventDefault: () => void; }) {
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     setError('');
-    setSuccess(false);
-
-    if (!email.trim()) {
-      setError('Please enter your email address');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const { error } =
-        await supabase.auth.resetPasswordForEmail(
-          email.trim(),
-          {
-            redirectTo: `${window.location.origin}/reset-password`,
-          }
+      const result = await resetPassword(email);
+
+      if (result.error) {
+        setError(result.error);
+
+        showToast(
+          'Unable to send reset email',
+          'error'
         );
 
-      if (error) {
-        throw error;
+        return;
       }
 
-      setSuccess(true);
-    } catch (err) {
-      console.error('Forgot password error:', err);
+      setSent(true);
+
+      showToast(
+        'Password reset email sent!',
+        'success'
+      );
+    } catch (error) {
+      console.error(
+        'Forgot password error:',
+        error
+      );
 
       setError(
-        (err as Error)?.message ||
-          'Failed to send reset email. Please try again.'
+        'Something went wrong. Please try again.'
+      );
+
+      showToast(
+        'Unable to send reset email',
+        'error'
       );
     } finally {
       setLoading(false);
@@ -50,36 +62,48 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+    <div className="container-page py-12 lg:py-20">
+      <div className="max-w-md mx-auto">
 
-        <div className="card p-6 sm:p-8">
+        {/* HEADER */}
+        <div className="text-center mb-8">
 
-          <div className="text-center mb-6">
-
-            <div className="w-14 h-14 rounded-full bg-palm/10 flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-7 h-7 text-palm" />
-            </div>
-
-            <h1 className="font-heading text-2xl sm:text-3xl text-ink mb-2">
-              Forgot Password?
-            </h1>
-
-            <p className="text-sm text-ink-soft">
-              Enter your registered email and we'll
-              send you a password reset link.
-            </p>
-
+          <div className="w-14 h-14 rounded-full bg-palm flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-6 h-6 text-white" />
           </div>
 
-          {success ? (
+          <h1 className="font-heading text-3xl text-ink mb-2">
+            Forgot Password?
+          </h1>
 
+          <p className="text-ink-soft">
+            Enter your email address and we'll send you
+            a password reset link.
+          </p>
+
+        </div>
+
+        {/* CARD */}
+        <div className="card p-6 lg:p-8">
+
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-copper/10 text-copper text-sm">
+              {error}
+            </div>
+          )}
+
+          {sent ? (
+            /* ============================
+               EMAIL SENT
+            ============================ */
             <div className="text-center">
 
-              <CheckCircle className="w-12 h-12 text-palm mx-auto mb-4" />
+              <div className="w-14 h-14 rounded-full bg-palm/10 flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-6 h-6 text-palm" />
+              </div>
 
               <h2 className="font-heading text-xl text-ink mb-2">
-                Check your email
+                Check Your Email
               </h2>
 
               <p className="text-sm text-ink-soft mb-6">
@@ -91,72 +115,92 @@ export default function ForgotPassword() {
               </p>
 
               <p className="text-xs text-ink-soft mb-6">
-                If you don't see the email, check your
-                spam or junk folder.
+                Didn't receive the email? Check your
+                spam folder or try again.
               </p>
 
-              <Link
-                to="/login"
-                className="btn-primary inline-flex"
+              <button
+                type="button"
+                onClick={() => {
+                  setSent(false);
+                  setError('');
+                }}
+                className="text-sm text-palm font-medium hover:underline"
               >
-                Back to Login
-              </Link>
+                Try another email
+              </button>
 
             </div>
-
           ) : (
+            /* ============================
+               EMAIL FORM
+            ============================ */
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-5"
+            >
 
-            <form onSubmit={handleSubmit}>
+              <div>
+                <label
+                  htmlFor="forgot-email"
+                  className="block text-sm font-medium text-ink mb-2"
+                >
+                  Email
+                </label>
 
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-ink mb-2"
-              >
-                Email Address
-              </label>
+                <div className="relative">
 
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                placeholder="Enter your email"
-                className="input-field mb-3"
-                autoComplete="email"
-              />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-soft" />
 
-              {error && (
-                <p className="text-sm text-copper mb-4">
-                  {error}
-                </p>
-              )}
+                  <input
+                    id="forgot-email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) =>
+                      setEmail(e.target.value)
+                    }
+                    placeholder="you@example.com"
+                    className="input-field pl-12"
+                  />
+
+                </div>
+              </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full disabled:opacity-50"
+                className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading
-                  ? 'Sending...'
-                  : 'Send Reset Link'}
+                {loading ? (
+                  'Sending...'
+                ) : (
+                  <>
+                    Send Reset Link
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
               </button>
 
-              <Link
-                to="/login"
-                className="flex items-center justify-center gap-2 text-sm text-ink-soft hover:text-palm mt-5"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Login
-              </Link>
-
             </form>
-
           )}
 
-        </div>
+          {/* BACK TO LOGIN */}
+          <div className="mt-6 text-center">
 
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 text-sm text-palm font-medium hover:underline"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Login
+            </Link>
+
+          </div>
+
+        </div>
       </div>
     </div>
   );

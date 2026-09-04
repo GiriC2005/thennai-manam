@@ -5,6 +5,7 @@ import type { Review } from '@/lib/types';
 import StarRating from '@/components/StarRating';
 import Loader from '@/components/Loader';
 import { formatDate } from '@/lib/utils';
+import ScrollReveal from '@/components/ScrollReveal';
 
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -53,6 +54,7 @@ export default function Reviews() {
     <div>
       {/* Hero */}
       <section className="bg-gradient-to-br from-bg to-bg-warm py-16 lg:py-24">
+        <ScrollReveal>
         <div className="container-page text-center max-w-3xl mx-auto">
           <p className="text-gold text-sm font-medium mb-3">
             Customer Stories
@@ -72,6 +74,7 @@ export default function Reviews() {
             </div>
           )}
         </div>
+        </ScrollReveal>
       </section>
 
       {/* Reviews */}

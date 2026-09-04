@@ -661,32 +661,222 @@ export async function updateOrderTracking(
    COUPONS
 ===================================================== */
 
-export async function validateCoupon(
-  code: string
-): Promise<Coupon | null> {
+/* =====================================================
+   COUPONS
+===================================================== */
+
+export async function getCoupons(): Promise<Coupon[]> {
   const {
     data,
     error,
   } = await supabase
     .from('coupons')
     .select('*')
-    .eq(
-      'code',
-      code.toUpperCase()
-    )
-    .eq(
-      'active',
-      true
-    )
-    .maybeSingle();
+    .order('created_at', {
+      ascending: false,
+    });
 
   if (error) {
+    console.error('getCoupons error:', error);
     throw error;
   }
 
-  return data as Coupon | null;
+  return (data || []) as Coupon[];
 }
 
+
+/* =====================================================
+   VALIDATE COUPON
+===================================================== */
+
+export async function validateCoupon(
+  code: string,
+  subtotal?: number
+): Promise<Coupon | null> {
+  const cleanCode = code.trim().toUpperCase();
+
+  if (!cleanCode) {
+    return null;
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('coupons')
+    .select('*')
+    .eq('code', cleanCode)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (error) {
+    console.error('validateCoupon error:', error);
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const coupon = data as Coupon & {
+    expires_at?: string | null;
+    minimum_order_amount?: number | null;
+    usage_limit?: number | null;
+    used_count?: number | null;
+  };
+
+  /* Expiry check */
+  if (
+    coupon.expires_at &&
+    new Date(coupon.expires_at).getTime() < Date.now()
+  ) {
+    return null;
+  }
+
+  /* Usage limit check */
+  if (
+    coupon.usage_limit !== null &&
+    coupon.usage_limit !== undefined &&
+    (coupon.used_count || 0) >= coupon.usage_limit
+  ) {
+    return null;
+  }
+
+  /* Minimum order check */
+  if (
+    subtotal !== undefined &&
+    coupon.minimum_order_amount &&
+    subtotal < Number(coupon.minimum_order_amount)
+  ) {
+    throw new Error(
+      `Minimum order value is ₹${Number(
+        coupon.minimum_order_amount
+      ).toLocaleString('en-IN')}`
+    );
+  }
+
+  return coupon;
+}
+
+
+/* =====================================================
+   CREATE COUPON
+===================================================== */
+
+export async function createCoupon(
+  coupon: Partial<Coupon>
+): Promise<Coupon> {
+  const payload = {
+    ...coupon,
+    code: String(coupon.code || '')
+      .trim()
+      .toUpperCase(),
+  };
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('coupons')
+    .insert(payload)
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('createCoupon error:', error);
+    throw error;
+  }
+
+  return data as Coupon;
+}
+
+
+/* =====================================================
+   UPDATE COUPON
+===================================================== */
+
+export async function updateCoupon(
+  id: string,
+  updates: Partial<Coupon>
+): Promise<Coupon> {
+  const payload = {
+    ...updates,
+    ...(updates.code
+      ? {
+          code: String(updates.code)
+            .trim()
+            .toUpperCase(),
+        }
+      : {}),
+  };
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('coupons')
+    .update(payload)
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('updateCoupon error:', error);
+    throw error;
+  }
+
+  return data as Coupon;
+}
+
+
+/* =====================================================
+   DELETE COUPON
+===================================================== */
+
+export async function deleteCoupon(
+  id: string
+): Promise<void> {
+  const {
+    error,
+  } = await supabase
+    .from('coupons')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('deleteCoupon error:', error);
+    throw error;
+  }
+}
+
+
+/* =====================================================
+   TOGGLE COUPON
+===================================================== */
+
+export async function toggleCoupon(
+  id: string,
+  active: boolean
+): Promise<Coupon> {
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('coupons')
+    .update({
+      active,
+    })
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('toggleCoupon error:', error);
+    throw error;
+  }
+
+  return data as Coupon;
+}
 /* =====================================================
    ADMIN REVIEWS
 ===================================================== */

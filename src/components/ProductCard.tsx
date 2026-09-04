@@ -1,9 +1,18 @@
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
+
+import {
+  Heart,
+  ShoppingCart,
+  Eye,
+  Star,
+} from 'lucide-react';
+
 import type { Product } from '@/lib/types';
 
 import { useCart } from '@/context/CartContext';
-import { useWishlist } from '@/context/WishlistContext';
+import {
+  useWishlist,
+} from '@/context/WishlistContext';
 import { useToast } from '@/context/ToastContext';
 
 import {
@@ -11,28 +20,64 @@ import {
   discountPercent,
 } from '@/lib/utils';
 
+import { flyToTarget } from '@/lib/flyToTarget';
+
 interface Props {
   product: Product;
-  onQuickView?: (product: Product) => void;
+  onQuickView?: (
+    product: Product
+  ) => void;
 }
 
 export default function ProductCard({
   product,
   onQuickView,
 }: Props) {
-  const { addToCart } = useCart();
-  const { toggleWishlist, isWishlisted } =
-    useWishlist();
-  const { showToast } = useToast();
+  const { addToCart } =
+    useCart();
 
-  const wished = isWishlisted(product.id);
+  const {
+    toggleWishlist,
+    isWishlisted,
+  } = useWishlist();
 
-  const discount = discountPercent(
-    product.mrp ?? 0,
-    product.price
-  );
+  const { showToast } =
+    useToast();
 
-  const outOfStock = product.stock <= 0;
+  const wished =
+    isWishlisted(product.id);
+
+  const discount =
+    discountPercent(
+      product.mrp ?? 0,
+      product.price
+    );
+
+  const outOfStock =
+    product.stock <= 0;
+
+  // ==========================================
+  // FIND PRODUCT IMAGE
+  // ==========================================
+
+  function getProductImageElement(
+    button: HTMLElement
+  ) {
+    const card =
+      button.closest(
+        '[data-product-card]'
+      );
+
+    if (!card) return null;
+
+    return card.querySelector(
+      '[data-product-image]'
+    ) as HTMLElement | null;
+  }
+
+  // ==========================================
+  // ADD TO CART
+  // ==========================================
 
   function handleAddToCart(
     e: React.MouseEvent
@@ -42,10 +87,23 @@ export default function ProductCard({
 
     if (outOfStock) return;
 
+    const imageElement =
+      getProductImageElement(
+        e.currentTarget as HTMLElement
+      );
+
+    flyToTarget({
+      source: imageElement,
+      targetId: 'cart-target',
+      imageUrl:
+        product.images?.[0],
+    });
+
     addToCart(
       product,
       1,
-      product.sizes?.[0] ?? 'Standard'
+      product.sizes?.[0] ??
+        'Standard'
     );
 
     showToast(
@@ -54,11 +112,30 @@ export default function ProductCard({
     );
   }
 
+  // ==========================================
+  // WISHLIST
+  // ==========================================
+
   function handleWishlist(
     e: React.MouseEvent
   ) {
     e.preventDefault();
     e.stopPropagation();
+
+    const imageElement =
+      getProductImageElement(
+        e.currentTarget as HTMLElement
+      );
+
+    if (!wished) {
+      flyToTarget({
+        source: imageElement,
+        targetId:
+          'wishlist-target',
+        imageUrl:
+          product.images?.[0],
+      });
+    }
 
     toggleWishlist(product);
 
@@ -69,6 +146,10 @@ export default function ProductCard({
       'info'
     );
   }
+
+  // ==========================================
+  // QUICK VIEW
+  // ==========================================
 
   function handleQuickView(
     e: React.MouseEvent
@@ -81,6 +162,7 @@ export default function ProductCard({
 
   return (
     <div
+      data-product-card
       className="
         group
         card
@@ -92,27 +174,26 @@ export default function ProductCard({
         flex-col
       "
     >
-
-      {/* =====================================================
+      {/* =====================================
           PRODUCT IMAGE
-      ===================================================== */}
+      ===================================== */}
 
-     <div
-  className="
-    relative
-    h-[100px]
-    sm:h-[160px]
-    lg:h-[220px]
-    overflow-hidden
-    bg-bg-warm
-  "
->
-
+      <div
+        className="
+          relative
+          h-[100px]
+          sm:h-[160px]
+          lg:h-[220px]
+          overflow-hidden
+          bg-bg-warm
+        "
+      >
         <Link
           to={`/product/${product.slug}`}
           className="block w-full h-full"
         >
           <img
+            data-product-image
             src={product.images?.[0]}
             alt={product.name}
             loading="lazy"
@@ -127,9 +208,7 @@ export default function ProductCard({
           />
         </Link>
 
-        {/* =================================================
-            BADGES
-        ================================================= */}
+        {/* BADGES */}
 
         <div
           className="
@@ -144,7 +223,6 @@ export default function ProductCard({
             sm:gap-1.5
           "
         >
-
           {discount > 0 && (
             <span
               className="
@@ -204,12 +282,9 @@ export default function ProductCard({
               Out of Stock
             </span>
           )}
-
         </div>
 
-        {/* =================================================
-            ACTION BUTTONS
-        ================================================= */}
+        {/* ACTION BUTTONS */}
 
         <div
           className="
@@ -224,11 +299,12 @@ export default function ProductCard({
             sm:gap-2
           "
         >
-
-          {/* Wishlist */}
+          {/* WISHLIST */}
 
           <button
-            onClick={handleWishlist}
+            onClick={
+              handleWishlist
+            }
             className="
               w-7
               h-7
@@ -261,11 +337,13 @@ export default function ProductCard({
             />
           </button>
 
-          {/* Quick View */}
+          {/* QUICK VIEW */}
 
           {onQuickView && (
             <button
-              onClick={handleQuickView}
+              onClick={
+                handleQuickView
+              }
               className="
                 hidden
                 sm:flex
@@ -285,16 +363,15 @@ export default function ProductCard({
               <Eye className="w-4 h-4 text-ink" />
             </button>
           )}
-
         </div>
 
-        {/* =================================================
-            DESKTOP HOVER ADD TO CART
-        ================================================= */}
+        {/* DESKTOP ADD TO CART */}
 
         {!outOfStock && (
           <button
-            onClick={handleAddToCart}
+            onClick={
+              handleAddToCart
+            }
             className="
               hidden
               sm:flex
@@ -317,15 +394,15 @@ export default function ProductCard({
             "
           >
             <ShoppingCart className="w-4 h-4" />
+
             Add to Cart
           </button>
         )}
-
       </div>
 
-      {/* =====================================================
+      {/* =====================================
           PRODUCT INFORMATION
-      ===================================================== */}
+      ===================================== */}
 
       <div
         className="
@@ -336,9 +413,6 @@ export default function ProductCard({
           flex-1
         "
       >
-
-        {/* Category */}
-
         {product.category && (
           <p
             className="
@@ -353,8 +427,6 @@ export default function ProductCard({
             {product.category.name}
           </p>
         )}
-
-        {/* Product Name */}
 
         <Link
           to={`/product/${product.slug}`}
@@ -377,8 +449,6 @@ export default function ProductCard({
           </h3>
         </Link>
 
-        {/* Short Description */}
-
         <p
           className="
             text-[10px]
@@ -392,9 +462,7 @@ export default function ProductCard({
           {product.short_description}
         </p>
 
-        {/* =================================================
-            RATING
-        ================================================= */}
+        {/* RATING */}
 
         <div
           className="
@@ -405,9 +473,7 @@ export default function ProductCard({
             sm:mb-3
           "
         >
-
           <div className="flex items-center gap-0.5">
-
             {[1, 2, 3, 4, 5].map(
               (star) => (
                 <Star
@@ -429,24 +495,14 @@ export default function ProductCard({
                 />
               )
             )}
-
           </div>
 
-          <span
-            className="
-              text-[9px]
-              sm:text-xs
-              text-ink-soft
-            "
-          >
+          <span className="text-[9px] sm:text-xs text-ink-soft">
             ({product.review_count})
           </span>
-
         </div>
 
-        {/* =================================================
-            PRICE
-        ================================================= */}
+        {/* PRICE */}
 
         <div
           className="
@@ -458,7 +514,6 @@ export default function ProductCard({
             flex-wrap
           "
         >
-
           <span
             className="
               font-mono
@@ -468,7 +523,9 @@ export default function ProductCard({
               text-ink
             "
           >
-            {formatPrice(product.price)}
+            {formatPrice(
+              product.price
+            )}
           </span>
 
           {product.mrp &&
@@ -483,33 +540,26 @@ export default function ProductCard({
                   line-through
                 "
               >
-                {formatPrice(product.mrp)}
+                {formatPrice(
+                  product.mrp
+                )}
               </span>
             )}
 
           {discount > 0 && (
-            <span
-              className="
-                hidden
-                sm:inline
-                text-[10px]
-                font-bold
-                text-copper
-              "
-            >
+            <span className="hidden sm:inline text-[10px] font-bold text-copper">
               {discount}% off
             </span>
           )}
-
         </div>
 
-        {/* =================================================
-            MOBILE ADD TO CART
-        ================================================= */}
+        {/* MOBILE ADD TO CART */}
 
         {!outOfStock && (
           <button
-            onClick={handleAddToCart}
+            onClick={
+              handleAddToCart
+            }
             className="
               sm:hidden
               mt-2
@@ -528,12 +578,11 @@ export default function ProductCard({
             "
           >
             <ShoppingCart className="w-3 h-3" />
+
             Add to Cart
           </button>
         )}
-
       </div>
-
     </div>
   );
 }

@@ -39,6 +39,7 @@ import AdminOrderDetails from '@/pages/admin/AdminOrderDetails';
 import Reports from '@/pages/admin/AdminReports';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import AdminCoupons from '@/pages/admin/AdminCoupons';
 function App() {
   return (
     <BrowserRouter>
@@ -64,6 +65,14 @@ function App() {
 <Route
   path="/reset-password"
   element={<ResetPassword />}
+/>
+<Route
+  path="/admin/coupons"
+  element={
+    <ProtectedRoute adminOnly>
+      <AdminCoupons />
+    </ProtectedRoute>
+  }
 />
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />

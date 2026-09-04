@@ -19,6 +19,7 @@ import {
 
 import ProductCard from '@/components/ProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
+import ScrollReveal from '@/components/ScrollReveal';
 
 export default function Shop() {
   const [searchParams, setSearchParams] =
@@ -424,7 +425,7 @@ export default function Shop() {
       {/* =================================================
           HEADER
       ================================================= */}
-
+       <ScrollReveal>
       <div className="mb-5 sm:mb-8">
 
         <h1 className="font-heading text-3xl lg:text-4xl text-ink mb-2">
@@ -436,6 +437,7 @@ export default function Shop() {
         </p>
 
       </div>
+       </ScrollReveal>
 
       {/* =================================================
           SEARCH
@@ -461,23 +463,25 @@ export default function Shop() {
           />
 
           <input
-            type="text"
-            defaultValue={search}
-            placeholder="Search products..."
-            onChange={(e) =>
-              updateParam(
-                'q',
-                e.target.value
-              )
-            }
-            className="
-              input-field
-              pl-10
-              sm:pl-12
-              text-sm
-            "
-          />
-
+  id="shop-product-search"
+  name="product-search"
+  type="search"
+  defaultValue={search}
+  placeholder="Search products..."
+  autoComplete="off"
+  onChange={(e) =>
+    updateParam(
+      'q',
+      e.target.value
+    )
+  }
+  className="
+    input-field
+    pl-10
+    sm:pl-12
+    text-sm
+  "
+/>
         </div>
 
       </div>
@@ -682,6 +686,7 @@ export default function Shop() {
 
               {products.map(
                 (product) => (
+                  
                   <ProductCard
                     key={product.id}
                     product={product}

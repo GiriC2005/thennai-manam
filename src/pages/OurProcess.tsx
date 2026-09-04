@@ -6,6 +6,7 @@ import {
   Filter,
   Droplets,
 } from 'lucide-react';
+import ScrollReveal from '@/components/ScrollReveal';
 
 const steps = [
   {
@@ -47,6 +48,7 @@ export default function OurProcess() {
           HERO
       ========================================== */}
       <section className="bg-gradient-to-br from-bg to-bg-warm py-16 lg:py-24">
+        <ScrollReveal>
         <div className="container-page text-center max-w-3xl mx-auto">
           <p className="text-gold text-sm font-medium mb-3">
             The marachekku method
@@ -62,6 +64,7 @@ export default function OurProcess() {
             generations.
           </p>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* =========================================
@@ -80,83 +83,74 @@ export default function OurProcess() {
             {/* =====================================
                 VERTICAL TIMELINE LINE
             ====================================== */}
-            <div
-              className="
-                absolute
-                left-7
-                lg:left-9
-                top-7
-                bottom-7
-                w-0.5
-                bg-ink/10
-                z-0
-              "
-            />
+           
 
             {/* =====================================
                 STEPS
             ====================================== */}
             {steps.map((step, i) => {
-              const Icon = step.icon;
+  const Icon = step.icon;
 
-              return (
-                <div
-                  key={step.num}
-                  className="
-                    relative
-                    flex
-                    gap-6
-                    lg:gap-8
-                    mb-12
-                    last:mb-0
-                  "
-                >
-                  {/* =================================
-                      NUMBER CIRCLE
-                  ================================== */}
-                  <div className="relative shrink-0 z-10">
-                    <div
-                      className="
-                        w-14
-                        h-14
-                        lg:w-[72px]
-                        lg:h-[72px]
-                        rounded-full
-                        bg-palm
-                        text-white
-                        flex
-                        items-center
-                        justify-center
-                        font-heading
-                        font-bold
-                        text-lg
-                        shadow-sm
-                      "
-                    >
-                      {step.num}
-                    </div>
-                  </div>
-
-                  {/* =================================
-                      CONTENT
-                  ================================== */}
-                  <div className="flex-1 pt-2 pb-8">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Icon className="w-6 h-6 text-palm shrink-0" />
-
-                      <h2 className="font-heading text-2xl text-ink">
-                        {step.title}
-                      </h2>
-                    </div>
-
-                    <p className="text-ink-soft leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+  return (
+    <ScrollReveal
+      key={step.num}
+      direction="up"
+      delay={i * 180}
+      duration={900}
+      distance={50}
+    >
+      <div
+        className="
+          relative
+          flex
+          gap-6
+          lg:gap-8
+          mb-12
+          last:mb-0
+        "
+      >
+        {/* NUMBER CIRCLE */}
+        <div className="relative shrink-0 z-10">
+          <div
+            className="
+              w-14
+              h-14
+              lg:w-[72px]
+              lg:h-[72px]
+              rounded-full
+              bg-palm
+              text-white
+              flex
+              items-center
+              justify-center
+              font-heading
+              font-bold
+              text-lg
+              shadow-sm
+            "
+          >
+            {step.num}
           </div>
+        </div>
+
+        {/* CONTENT */}
+        <div className="flex-1 pt-2 pb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <Icon className="w-6 h-6 text-palm shrink-0" />
+
+            <h2 className="font-heading text-2xl text-ink">
+              {step.title}
+            </h2>
+          </div>
+
+          <p className="text-ink-soft leading-relaxed">
+            {step.desc}
+          </p>
+        </div>
+      </div>
+    </ScrollReveal>
+  );
+})}          </div>
         </div>
       </section>
 
@@ -164,6 +158,7 @@ export default function OurProcess() {
           CTA
       ========================================== */}
       <section className="bg-palm-deep text-bg py-16">
+        <ScrollReveal>
         <div className="container-page text-center max-w-2xl mx-auto">
           <h2 className="font-heading text-3xl text-bg mb-4">
             Taste the difference
@@ -193,6 +188,7 @@ export default function OurProcess() {
             Shop Our Oils
           </Link>
         </div>
+        </ScrollReveal>
       </section>
     </div>
   );

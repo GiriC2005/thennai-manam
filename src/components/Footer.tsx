@@ -169,7 +169,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="#"
+                href="https://www.instagram.com/thennai_manam_official?igsi=MTV3OGd2b2Z2b2M1Ng=="
                 className="w-9 h-9 rounded-full bg-bg/10 flex items-center justify-center hover:bg-gold transition-colors"
                 aria-label="Instagram"
               >
@@ -185,7 +185,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="#"
+                 href="https://wa.me/917598392894"
                 className="w-9 h-9 rounded-full bg-bg/10 flex items-center justify-center hover:bg-gold transition-colors"
                 aria-label="WhatsApp"
               >

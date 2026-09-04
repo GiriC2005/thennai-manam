@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useRef,useState, type FormEvent } from 'react';
+import { useParams, Link, useNavigate, } from 'react-router-dom';
 
 import {
   Heart,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import type { Product, Review } from '@/lib/types';
+import { flyToTarget } from '@/lib/flyToTarget';
 
 import {
   getProductBySlug,
@@ -48,6 +49,7 @@ export default function ProductDetails() {
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  const productImageRef =useRef<HTMLDivElement>(null);
 
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
@@ -138,34 +140,52 @@ export default function ProductDetails() {
   }
 
   function handleAddToCart() {
-    if (!product) {
-      showToast('Product not available', 'error');
-      return;
-    }
-
-    const safeProduct = createSafeProduct();
-
-    if (!safeProduct) return;
-
-    const safeStock = Number(safeProduct.stock);
-
-    const safeQuantity = Math.min(
-      Math.max(1, quantity),
-      safeStock
-    );
-
-    addToCart(
-      safeProduct,
-      safeQuantity,
-      'Standard'
-    );
-
+  if (!product) {
     showToast(
-      `${product.name} added to cart`,
-      'success'
+      'Product not available',
+      'error'
     );
+
+    return;
   }
 
+  const safeProduct =
+    createSafeProduct();
+
+  if (!safeProduct) return;
+
+  const safeStock =
+    Number(safeProduct.stock);
+
+  const safeQuantity = Math.min(
+    Math.max(1, quantity),
+    safeStock
+  );
+
+  // ========================================
+  // FLY PRODUCT IMAGE → CART
+  // ========================================
+
+  flyToTarget({
+    source:
+      productImageRef.current,
+    targetId: 'cart-target',
+    imageUrl:
+      product.images?.[activeImage] ||
+      product.images?.[0],
+  });
+
+  addToCart(
+    safeProduct,
+    safeQuantity,
+    'Standard'
+  );
+
+  showToast(
+    `${product.name} added to cart`,
+    'success'
+  );
+}
   function handleBuyNow() {
     if (!product) {
       showToast('Product not available', 'error');
@@ -193,21 +213,34 @@ export default function ProductDetails() {
   }
 
   function handleWishlist() {
-    if (!product) return;
+  if (!product) return;
 
-    const alreadyWishlisted =
-      isWishlisted(product.id);
+  const alreadyWishlisted =
+    isWishlisted(product.id);
 
-    toggleWishlist(product);
-
-    showToast(
-      alreadyWishlisted
-        ? 'Removed from wishlist'
-        : 'Added to wishlist',
-      'info'
-    );
+  // Only fly when ADDING.
+  // If removing, don't fly.
+  if (!alreadyWishlisted) {
+    flyToTarget({
+      source:
+        productImageRef.current,
+      targetId:
+        'wishlist-target',
+      imageUrl:
+        product.images?.[activeImage] ||
+        product.images?.[0],
+    });
   }
 
+  toggleWishlist(product);
+
+  showToast(
+    alreadyWishlisted
+      ? 'Removed from wishlist'
+      : 'Added to wishlist',
+    'info'
+  );
+}
   async function handleSubmitReview(
     e: FormEvent
   ) {
@@ -385,28 +418,25 @@ export default function ProductDetails() {
   {/* MAIN PRODUCT IMAGE */}
 
   <div
-    className="
-      w-full
-      max-w-[280px]
-      sm:max-w-[420px]
-      lg:max-w-[480px]
-      lg:h-[350px]
-      xl:h-[350px]
-      mx-auto
-
-      aspect-square
-      lg:aspect-auto
-
-      rounded-xl
-      sm:rounded-2xl
-
-      overflow-hidden
-      bg-bg-warm
-
-      mb-3
-      sm:mb-4
-    "
-  >
+  ref={productImageRef}
+  className="
+    w-full
+    max-w-[280px]
+    sm:max-w-[420px]
+    lg:max-w-[480px]
+    lg:h-[350px]
+    xl:h-[350px]
+    mx-auto
+    aspect-square
+    lg:aspect-auto
+    rounded-xl
+    sm:rounded-2xl
+    overflow-hidden
+    bg-bg-warm
+    mb-3
+    sm:mb-4
+  "
+>
 
     {product.images?.length > 0 ? (
       <img

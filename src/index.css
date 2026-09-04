@@ -317,3 +317,37 @@
     transition-duration: 0.01ms !important;
   }
 }
+/* ========================================
+   SMOOTH SCROLL REVEAL
+   ======================================== */
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translate3d(0, 35px, 0);
+  transition-property: opacity, transform;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+[data-aos] {
+  overflow-x: clip;
+}

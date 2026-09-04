@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   Send,
@@ -8,7 +7,9 @@ import {
   MapPin,
   Clock,
 } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import { useToast } from '@/context/ToastContext';
+import ScrollReveal from '@/components/ScrollReveal';
 
 export default function Contact() {
   const { showToast } = useToast();
@@ -23,16 +24,31 @@ export default function Contact() {
 
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (loading) return;
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const templateParams = {
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+        subject: form.subject,
+        message: form.message,
+      };
+
+      await emailjs.send(
+        'service_68gwjck',
+        'template_8ec6myc',
+        templateParams,
+        '9YdQ3Qf314yBesB9U'
+      );
 
       showToast(
-        'Message sent! We will get back to you soon.',
+        'Message sent successfully! We will get back to you soon.',
         'success'
       );
 
@@ -43,7 +59,16 @@ export default function Contact() {
         subject: '',
         message: '',
       });
-    }, 1000);
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+
+      showToast(
+        'Failed to send message. Please try again.',
+        'error'
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,16 +76,18 @@ export default function Contact() {
       {/* =====================================
           PAGE HEADER
       ====================================== */}
-      <div className="text-center max-w-2xl mx-auto mb-12">
-        <h1 className="font-heading text-3xl lg:text-4xl text-ink mb-4">
-          Get in Touch
-        </h1>
+      <ScrollReveal>
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h1 className="font-heading text-3xl lg:text-4xl text-ink mb-4">
+            Get in Touch
+          </h1>
 
-        <p className="text-ink-soft">
-          Have a question about our products, your order,
-          or just want to say hello? We'd love to hear from you.
-        </p>
-      </div>
+          <p className="text-ink-soft">
+            Have a question about our products, your order,
+            or just want to say hello? We'd love to hear from you.
+          </p>
+        </div>
+      </ScrollReveal>
 
       {/* =====================================
           MAIN CONTENT
@@ -78,14 +105,21 @@ export default function Contact() {
             {/* NAME + PHONE */}
             <div className="grid sm:grid-cols-2 gap-4">
 
+              {/* NAME */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">
+                <label
+                  htmlFor="contact-name"
+                  className="block text-sm font-medium text-ink mb-2"
+                >
                   Name
                 </label>
 
                 <input
+                  id="contact-name"
+                  name="name"
                   type="text"
                   required
+                  autoComplete="name"
                   value={form.name}
                   onChange={(e) =>
                     setForm((f) => ({
@@ -98,13 +132,21 @@ export default function Contact() {
                 />
               </div>
 
+              {/* PHONE */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">
+                <label
+                  htmlFor="contact-phone"
+                  className="block text-sm font-medium text-ink mb-2"
+                  
+                >
                   Phone
                 </label>
 
                 <input
+                  id="contact-phone"
+                  name="phone"
                   type="tel"
+                  autoComplete="tel"
                   value={form.phone}
                   onChange={(e) =>
                     setForm((f) => ({
@@ -121,13 +163,19 @@ export default function Contact() {
 
             {/* EMAIL */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label
+                htmlFor="contact-email"
+                className="block text-sm font-medium text-ink mb-2"
+              >
                 Email
               </label>
 
               <input
+                id="contact-email"
+                name="email"
                 type="email"
                 required
+                autoComplete="email"
                 value={form.email}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -142,11 +190,16 @@ export default function Contact() {
 
             {/* SUBJECT */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label
+                htmlFor="contact-subject"
+                className="block text-sm font-medium text-ink mb-2"
+              >
                 Subject
               </label>
 
               <input
+                id="contact-subject"
+                name="subject"
                 type="text"
                 required
                 value={form.subject}
@@ -163,11 +216,16 @@ export default function Contact() {
 
             {/* MESSAGE */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label
+                htmlFor="contact-message"
+                className="block text-sm font-medium text-ink mb-2"
+              >
                 Message
               </label>
 
               <textarea
+                id="contact-message"
+                name="message"
                 required
                 rows={5}
                 value={form.message}
@@ -246,10 +304,8 @@ export default function Contact() {
             sub="Sunday: Closed"
           />
 
-          {/* =================================
-              GOOGLE MAP
-          ================================== */}
-          <a
+          {/* GOOGLE MAP */}
+           <a
             href="https://www.google.com/maps/search/?api=1&query=Anupparpalayam%2C%20Pollachi%2C%20Coimbatore%20District%2C%20Tamil%20Nadu%20642205"
             target="_blank"
             rel="noopener noreferrer"
@@ -336,4 +392,3 @@ function ContactInfo({
     </div>
   );
 }
-

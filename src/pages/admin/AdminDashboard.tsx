@@ -7,8 +7,10 @@ import {
   Users,
   Package,
   ArrowRight,
+  ArrowLeft,
   MessageSquare,
   Star,
+  TicketPercent,
 } from 'lucide-react';
 
 import {
@@ -165,23 +167,61 @@ export default function AdminDashboard() {
       icon: Package,
       link: '/admin/products',
     },
+    {
+  title: 'Coupons',
+  value: 'Manage',
+  icon: TicketPercent,
+  link: '/admin/coupons',
+},
   ];
 
   return (
     <div className="space-y-8">
 
-      {/* HEADER */}
-      <div>
-        <h1 className="font-heading text-3xl text-ink">
-          Dashboard
-        </h1>
+     {/* HEADER */}
+<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-        <p className="text-ink-soft mt-1">
-          Welcome to Pollachi Coconut Oil
-          admin panel.
-        </p>
-      </div>
+  {/* TITLE */}
+  <div className="min-w-0">
+    <h1 className="font-heading text-2xl sm:text-3xl text-ink">
+      Dashboard
+    </h1>
 
+    <p className="text-sm sm:text-base text-ink-soft mt-1">
+      Welcome to Pollachi Coconut Oil admin panel.
+    </p>
+  </div>
+
+  {/* BACK TO STORE */}
+  <Link
+    to="/"
+    className="
+      inline-flex
+      items-center
+      justify-center
+      gap-2
+      w-full
+      sm:w-auto
+      px-4
+      py-2.5
+      rounded-xl
+      border
+      border-ink/10
+      bg-card
+      text-ink
+      text-sm
+      font-medium
+      hover:bg-ink/5
+      hover:border-ink/20
+      transition-all
+      shrink-0
+    "
+  >
+    <ArrowLeft className="w-4 h-4" />
+    <span>Back to Store</span>
+  </Link>
+
+</div>
       {/* MAIN STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
 

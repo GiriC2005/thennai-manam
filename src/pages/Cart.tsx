@@ -105,9 +105,9 @@ export default function Cart() {
 
     try {
       const coupon = await validateCoupon(
-        couponCode.trim()
-      );
-
+  couponCode.trim(),
+  subtotal
+);
       if (coupon) {
         setAppliedCoupon(coupon);
 
