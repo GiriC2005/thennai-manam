@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Send,
   Phone,
@@ -8,8 +8,10 @@ import {
   Clock,
 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+
 import { useToast } from '@/context/ToastContext';
-import ScrollReveal from '@/components/ScrollReveal';
 
 export default function Contact() {
   const { showToast } = useToast();
@@ -24,28 +26,96 @@ export default function Contact() {
 
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  /* ==============================
+     AOS
+  ============================== */
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      easing: 'ease-out-cubic',
+      once: true,
+      offset: 70,
+      disable: false,
+    });
+
+    AOS.refresh();
+  }, []);
+
+  /* ==============================
+     FORM SUBMIT
+  ============================== */
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     if (loading) return;
+
+    // Basic validation
+    if (!form.name.trim()) {
+      showToast('Please enter your name.', 'error');
+      return;
+    }
+
+    if (!form.email.trim()) {
+      showToast('Please enter your email.', 'error');
+      return;
+    }
+
+    if (!form.subject.trim()) {
+      showToast('Please enter a subject.', 'error');
+      return;
+    }
+
+    if (!form.message.trim()) {
+      showToast('Please enter your message.', 'error');
+      return;
+    }
 
     setLoading(true);
 
     try {
       const templateParams = {
-        name: form.name,
-        phone: form.phone,
-        email: form.email,
-        subject: form.subject,
-        message: form.message,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        subject: form.subject.trim(),
+        message: form.message.trim(),
       };
 
-      await emailjs.send(
-        'service_68gwjck',
-        'template_8ec6myc',
+      const serviceId =
+        import.meta.env.VITE_EMAILJS_SERVICE_ID;
+
+      const templateId =
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+
+      const publicKey =
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+      // Check EmailJS configuration
+      if (!serviceId || !templateId || !publicKey) {
+        console.error('EmailJS configuration missing:', {
+          serviceId: !!serviceId,
+          templateId: !!templateId,
+          publicKey: !!publicKey,
+        });
+
+        showToast(
+          'Email service is not configured. Please try again later.',
+          'error'
+        );
+
+        return;
+      }
+
+      const response = await emailjs.send(
+        serviceId,
+        templateId,
         templateParams,
-        '9YdQ3Qf314yBesB9U'
+        publicKey
       );
+
+      console.log('EmailJS Success:', response);
 
       showToast(
         'Message sent successfully! We will get back to you soon.',
@@ -59,8 +129,12 @@ export default function Contact() {
         subject: '',
         message: '',
       });
-    } catch (error) {
-      console.error('EmailJS Error:', error);
+    } catch (error: any) {
+      console.error('EmailJS Error:', {
+        status: error?.status,
+        text: error?.text,
+        message: error?.message,
+      });
 
       showToast(
         'Failed to send message. Please try again.',
@@ -72,22 +146,41 @@ export default function Contact() {
   }
 
   return (
-    <div className="container-page py-8">
+    <div className="container-page py-8 overflow-x-hidden">
+
       {/* =====================================
           PAGE HEADER
       ====================================== */}
-      <ScrollReveal>
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h1 className="font-heading text-3xl lg:text-4xl text-ink mb-4">
-            Get in Touch
-          </h1>
+      <div
+        className="text-center max-w-2xl mx-auto mb-12"
+        data-aos="fade-up"
+      >
+        <p
+          className="text-gold text-sm font-medium mb-2"
+          data-aos="fade-up"
+          data-aos-delay="100"
+        >
+          Contact Us
+        </p>
 
-          <p className="text-ink-soft">
-            Have a question about our products, your order,
-            or just want to say hello? We'd love to hear from you.
-          </p>
-        </div>
-      </ScrollReveal>
+        <h1
+          className="font-heading text-3xl lg:text-4xl text-ink mb-4"
+          data-aos="fade-up"
+          data-aos-delay="180"
+        >
+          Get in Touch
+        </h1>
+
+        <p
+          className="text-ink-soft"
+          data-aos="fade-up"
+          data-aos-delay="260"
+        >
+          Have a question about our products, your order,
+          or just want to say hello? We'd love to hear from you.
+        </p>
+      </div>
+
 
       {/* =====================================
           MAIN CONTENT
@@ -97,13 +190,22 @@ export default function Contact() {
         {/* ===================================
             CONTACT FORM
         ==================================== */}
-        <div className="card p-6 lg:p-8">
+        <div
+          className="card p-6 lg:p-8"
+          data-aos="fade-up"
+          data-aos-delay="100"
+        >
           <form
             onSubmit={handleSubmit}
             className="space-y-4"
           >
+
             {/* NAME + PHONE */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div
+              className="grid sm:grid-cols-2 gap-4"
+              data-aos="fade-up"
+              data-aos-delay="150"
+            >
 
               {/* NAME */}
               <div>
@@ -132,12 +234,12 @@ export default function Contact() {
                 />
               </div>
 
+
               {/* PHONE */}
               <div>
                 <label
                   htmlFor="contact-phone"
                   className="block text-sm font-medium text-ink mb-2"
-                  
                 >
                   Phone
                 </label>
@@ -161,8 +263,12 @@ export default function Contact() {
 
             </div>
 
+
             {/* EMAIL */}
-            <div>
+            <div
+              data-aos="fade-up"
+              data-aos-delay="220"
+            >
               <label
                 htmlFor="contact-email"
                 className="block text-sm font-medium text-ink mb-2"
@@ -188,8 +294,12 @@ export default function Contact() {
               />
             </div>
 
+
             {/* SUBJECT */}
-            <div>
+            <div
+              data-aos="fade-up"
+              data-aos-delay="290"
+            >
               <label
                 htmlFor="contact-subject"
                 className="block text-sm font-medium text-ink mb-2"
@@ -214,8 +324,12 @@ export default function Contact() {
               />
             </div>
 
+
             {/* MESSAGE */}
-            <div>
+            <div
+              data-aos="fade-up"
+              data-aos-delay="360"
+            >
               <label
                 htmlFor="contact-message"
                 className="block text-sm font-medium text-ink mb-2"
@@ -240,18 +354,26 @@ export default function Contact() {
               />
             </div>
 
-            {/* SUBMIT */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? 'Sending...' : 'Send Message'}
 
-              <Send className="w-4 h-4" />
-            </button>
+            {/* SUBMIT */}
+            <div
+              data-aos="fade-up"
+              data-aos-delay="430"
+            >
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? 'Sending...' : 'Send Message'}
+
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+
           </form>
         </div>
+
 
         {/* ===================================
             CONTACT INFORMATION
@@ -259,58 +381,90 @@ export default function Contact() {
         <div className="space-y-4">
 
           {/* PHONE */}
-          <ContactInfo
-            icon={Phone}
-            title="Phone"
-            value="+91 75983 92894"
-            sub="Mon to Sat, 9am - 7pm"
-            href="tel:+917598392894"
-          />
+          <div
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
+            <ContactInfo
+              icon={Phone}
+              title="Phone"
+              value="+91 75983 92894"
+              sub="Mon to Sat, 9am - 7pm"
+              href="tel:+917598392894"
+            />
+          </div>
+
 
           {/* EMAIL */}
-          <ContactInfo
-            icon={Mail}
-            title="Email"
-            value="girichandran.offi@gmail.com"
-            sub="We reply within 24 hours"
-            href="mailto:girichandran.offi@gmail.com"
-          />
+          <div
+            data-aos="fade-up"
+            data-aos-delay="180"
+          >
+            <ContactInfo
+              icon={Mail}
+              title="Email"
+              value="girichandran.offi@gmail.com"
+              sub="We reply within 24 hours"
+              href="mailto:girichandran.offi@gmail.com"
+            />
+          </div>
+
 
           {/* WHATSAPP */}
-          <ContactInfo
-            icon={MessageCircle}
-            title="WhatsApp"
-            value="+91 75983 92894"
-            sub="Quick chat support"
-            href="https://wa.me/917598392894"
-            external
-          />
+          <div
+            data-aos="fade-up"
+            data-aos-delay="260"
+          >
+            <ContactInfo
+              icon={MessageCircle}
+              title="WhatsApp"
+              value="+91 75983 92894"
+              sub="Quick chat support"
+              href="https://wa.me/917598392894"
+              external
+            />
+          </div>
+
 
           {/* LOCATION */}
-          <ContactInfo
-            icon={MapPin}
-            title="Visit Us"
-            value="Anupparpalayam, Pollachi, Coimbatore District"
-            sub="Tamil Nadu, India 642205"
-            href="https://www.google.com/maps/search/?api=1&query=Anupparpalayam%2C%20Pollachi%2C%20Coimbatore%20District%2C%20Tamil%20Nadu%20642205"
-            external
-          />
+          <div
+            data-aos="fade-up"
+            data-aos-delay="340"
+          >
+            <ContactInfo
+              icon={MapPin}
+              title="Visit Us"
+              value="Anupparpalayam, Pollachi, Coimbatore District"
+              sub="Tamil Nadu, India 642205"
+              href="https://www.google.com/maps/search/?api=1&query=Anupparpalayam%2C%20Pollachi%2C%20Coimbatore%20District%2C%20Tamil%20Nadu%20642205"
+              external
+            />
+          </div>
+
 
           {/* BUSINESS HOURS */}
-          <ContactInfo
-            icon={Clock}
-            title="Business Hours"
-            value="Monday - Saturday: 9am - 7pm"
-            sub="Sunday: Closed"
-          />
+          <div
+            data-aos="fade-up"
+            data-aos-delay="420"
+          >
+            <ContactInfo
+              icon={Clock}
+              title="Business Hours"
+              value="Monday - Saturday: 9am - 7pm"
+              sub="Sunday: Closed"
+            />
+          </div>
+
 
           {/* GOOGLE MAP */}
-           <a
+          <a
             href="https://www.google.com/maps/search/?api=1&query=Anupparpalayam%2C%20Pollachi%2C%20Coimbatore%20District%2C%20Tamil%20Nadu%20642205"
             target="_blank"
             rel="noopener noreferrer"
             className="block card p-1 overflow-hidden group"
             aria-label="Open Pollachi location in Google Maps"
+            data-aos="zoom-in"
+            data-aos-delay="500"
           >
             <iframe
               title="Pollachi location"
@@ -327,6 +481,7 @@ export default function Contact() {
     </div>
   );
 }
+
 
 /* ==========================================
    CONTACT INFO COMPONENT
