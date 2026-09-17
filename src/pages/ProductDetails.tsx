@@ -64,6 +64,171 @@ export default function ProductDetails() {
   const { user, profile } = useAuth();
   const { showToast } = useToast();
 
+  // =========================
+  // DYNAMIC SEO + PRODUCT SCHEMA
+  // =========================
+  useEffect(() => {
+  if (!product) return;
+
+  const siteName = 'Thennai Manam';
+
+  const description =
+    product.short_description ||
+    product.description ||
+    `Buy ${product.name} from ${siteName}. Pure traditional wood-pressed coconut oil from Pollachi.`;
+
+  const canonicalUrl =
+    `${window.location.origin}/product/${product.slug}`;
+
+  document.title = `${product.name} | ${siteName}`;
+
+  const setMeta = (
+    attribute: 'name' | 'property',
+    key: string,
+    content: string
+  ) => {
+    let meta = document.head.querySelector(
+      `meta[${attribute}="${key}"]`
+    ) as HTMLMetaElement | null;
+
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute(attribute, key);
+      document.head.appendChild(meta);
+    }
+
+    meta.setAttribute('content', content);
+  };
+
+  setMeta('name', 'description', description);
+
+  setMeta('property', 'og:title', `${product.name} | ${siteName}`);
+  setMeta('property', 'og:description', description);
+  setMeta('property', 'og:type', 'product');
+  setMeta('property', 'og:url', canonicalUrl);
+
+  if (product.images?.[0]) {
+    setMeta(
+      'property',
+      'og:image',
+      product.images[0]
+    );
+  }
+
+  setMeta(
+    'name',
+    'twitter:card',
+    'summary_large_image'
+  );
+
+  setMeta(
+    'name',
+    'twitter:title',
+    `${product.name} | ${siteName}`
+  );
+
+  setMeta(
+    'name',
+    'twitter:description',
+    description
+  );
+
+  if (product.images?.[0]) {
+    setMeta(
+      'name',
+      'twitter:image',
+      product.images[0]
+    );
+  }
+
+  let canonical =
+    document.head.querySelector(
+      'link[rel="canonical"]'
+    ) as HTMLLinkElement | null;
+
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.rel = 'canonical';
+    document.head.appendChild(canonical);
+  }
+
+  canonical.href = canonicalUrl;
+
+  // Product Schema
+  const existingSchema = document.head.querySelector(
+    'script[data-product-schema="true"]'
+  );
+
+  existingSchema?.remove();
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+
+    name: product.name,
+
+    description,
+
+    image: product.images?.filter(Boolean) || [],
+
+    url: canonicalUrl,
+
+    brand: {
+      '@type': 'Brand',
+      name: siteName,
+    },
+
+    offers: {
+      '@type': 'Offer',
+      url: canonicalUrl,
+      priceCurrency: 'INR',
+      price: Number(product.price).toFixed(2),
+
+      availability:
+        Number(product.stock) > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+
+      itemCondition:
+        'https://schema.org/NewCondition',
+    },
+
+    ...(product.review_count > 0 &&
+    product.rating > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(product.rating).toFixed(1),
+            reviewCount: product.review_count,
+            bestRating: '5',
+            worstRating: '1',
+          },
+        }
+      : {}),
+  };
+
+  const script = document.createElement('script');
+
+  script.type = 'application/ld+json';
+
+  script.setAttribute(
+    'data-product-schema',
+    'true'
+  );
+
+  script.textContent = JSON.stringify(schema);
+
+  document.head.appendChild(script);
+
+  return () => {
+    document
+      .querySelector(
+        'script[data-product-schema="true"]'
+      )
+      ?.remove();
+  };
+}, [product]);
+
   useEffect(() => {
     if (!slug) return;
 
@@ -421,33 +586,33 @@ export default function ProductDetails() {
   ref={productImageRef}
   className="
     w-full
-    max-w-[280px]
+    max-w-[320px]
     sm:max-w-[420px]
-    lg:max-w-[480px]
-    lg:h-[350px]
-    xl:h-[350px]
-    mx-auto
+    lg:max-w-[400px]
     aspect-square
-    lg:aspect-auto
+    mx-auto
     rounded-xl
     sm:rounded-2xl
     overflow-hidden
     bg-bg-warm
     mb-3
     sm:mb-4
+    flex
+    items-center
+    justify-center
   "
 >
 
     {product.images?.length > 0 ? (
-      <img
-        src={product.images[activeImage]}
-        alt={product.name}
-        className="
-          w-full
-          h-full
-          object-cover
-        "
-      />
+     <img
+  src={product.images[activeImage]}
+  alt={`${product.name} - Thennai Manam Coconut Oil`}
+  className="
+    w-full
+    h-full
+    object-contain
+  "
+/>
     ) : (
       <div
         className="

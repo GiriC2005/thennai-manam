@@ -1560,3 +1560,273 @@ export async function getSalesReport(
     dailySales,
   };
 }
+
+// =====================================================
+// HERO BANNERS
+// =====================================================
+
+export interface HeroBanner {
+  id: string;
+  title: string | null;
+  subtitle: string | null;
+  offer_text: string | null;
+
+  desktop_image_url: string;
+  mobile_image_url: string | null;
+
+  button_text: string | null;
+  button_link: string | null;
+
+  sort_order: number;
+  is_active: boolean;
+
+  created_at: string;
+  updated_at: string;
+}
+
+
+// =====================================================
+// GET ACTIVE HERO BANNERS
+// Used by Home page
+// =====================================================
+
+export async function getHeroBanners(): Promise<HeroBanner[]> {
+  const { data, error } = await supabase
+    .from('hero_banners')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', {
+      ascending: true,
+    });
+
+  if (error) {
+    console.error(
+      'GET HERO BANNERS ERROR:',
+      error
+    );
+
+    throw error;
+  }
+
+  return data || [];
+}
+
+
+// =====================================================
+// GET ALL HERO BANNERS
+// Used by Admin
+// =====================================================
+
+export async function getAllHeroBanners(): Promise<HeroBanner[]> {
+  const { data, error } = await supabase
+    .from('hero_banners')
+    .select('*')
+    .order('sort_order', {
+      ascending: true,
+    });
+
+  if (error) {
+    console.error(
+      'GET ALL HERO BANNERS ERROR:',
+      error
+    );
+
+    throw error;
+  }
+
+  return data || [];
+}
+
+
+// =====================================================
+// CREATE HERO BANNER
+// =====================================================
+
+export async function createHeroBanner(
+  banner: Omit<
+    HeroBanner,
+    'id' |
+    'created_at' |
+    'updated_at'
+  >
+) {
+  const { data, error } = await supabase
+    .from('hero_banners')
+    .insert(banner)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(
+      'CREATE HERO BANNER ERROR:',
+      error
+    );
+
+    throw error;
+  }
+
+  return data;
+}
+export type HeroBannerInput = {
+  title?: string | null;
+  subtitle?: string | null;
+  offer_text?: string | null;
+
+  desktop_image_url: string;
+  mobile_image_url?: string | null;
+
+  button_text?: string | null;
+  button_link?: string | null;
+
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+// =====================================================
+// UPDATE HERO BANNER
+// =====================================================
+
+export async function updateHeroBanner(
+  id: string,
+  updates: Partial<HeroBanner>
+) {
+  const { data, error } = await supabase
+    .from('hero_banners')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(
+      'UPDATE HERO BANNER ERROR:',
+      error
+    );
+
+    throw error;
+  }
+
+  return data;
+}
+
+
+// =====================================================
+// DELETE HERO BANNER
+// =====================================================
+
+export async function deleteHeroBanner(
+  id: string
+) {
+  const { error } = await supabase
+    .from('hero_banners')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error(
+      'DELETE HERO BANNER ERROR:',
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+// =====================================================
+// UPLOAD HERO IMAGE
+// =====================================================
+
+export async function uploadHeroBannerImage(
+  file: File,
+  type: 'desktop' | 'mobile'
+): Promise<string> {
+
+  const extension =
+    file.name.split('.').pop()?.toLowerCase() ||
+    'jpg';
+
+  const fileName =
+    `${crypto.randomUUID()}.${extension}`;
+
+  const filePath =
+    `${type}/${fileName}`;
+
+  const { error } =
+    await supabase.storage
+      .from('hero-banners')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+  if (error) {
+    console.error(
+      'HERO IMAGE UPLOAD ERROR:',
+      error
+    );
+
+    throw error;
+  }
+
+  const { data } =
+    supabase.storage
+      .from('hero-banners')
+      .getPublicUrl(filePath);
+
+  if (!data?.publicUrl) {
+    throw new Error(
+      'Unable to get uploaded image URL'
+    );
+  }
+
+  return data.publicUrl;
+}
+
+
+// =====================================================
+// DELETE HERO IMAGE FROM STORAGE
+// =====================================================
+
+export async function deleteHeroBannerImage(
+  imageUrl: string | null
+) {
+  if (!imageUrl) return;
+
+  try {
+    const marker =
+      '/storage/v1/object/public/hero-banners/';
+
+    const index =
+      imageUrl.indexOf(marker);
+
+    if (index === -1) return;
+
+    const filePath =
+      imageUrl.substring(
+        index + marker.length
+      );
+
+    if (!filePath) return;
+
+    const { error } =
+      await supabase.storage
+        .from('hero-banners')
+        .remove([filePath]);
+
+    if (error) {
+      console.error(
+        'DELETE HERO IMAGE ERROR:',
+        error
+      );
+    }
+  } catch (error) {
+    console.error(
+      'DELETE HERO IMAGE ERROR:',
+      error
+    );
+  }
+}

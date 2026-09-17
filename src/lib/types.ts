@@ -109,3 +109,17 @@ export interface CartItem {
   size: string;
   stock: number;
 }
+export interface HeroBanner {
+  id: string;
+  title: string | null;
+  subtitle: string | null;
+  offer_text: string | null;
+  desktop_image_url: string;
+  mobile_image_url: string | null;
+  button_text: string | null;
+  button_link: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -40,6 +40,7 @@ import Reports from '@/pages/admin/AdminReports';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import AdminCoupons from '@/pages/admin/AdminCoupons';
+import HeroBanners from '@/pages/admin/HeroBanners';
 function App() {
   return (
     <BrowserRouter>
@@ -133,6 +134,11 @@ function App() {
     path="categories"
     element={<AdminCategories />}
   />
+
+  <Route
+  path="/admin/hero-banners"
+  element={<HeroBanners />}
+/>
 </Route>
 
         <Route path="*" element={<MainLayout />}>

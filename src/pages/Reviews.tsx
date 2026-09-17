@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { getProducts, getReviews } from '@/services/api';
 import type { Review } from '@/lib/types';
@@ -34,12 +33,15 @@ export default function Reviews() {
 
         if (all.length > 0) {
           setAvgRating(
-            all.reduce((sum, review) => sum + review.rating, 0) /
-              all.length
+            all.reduce(
+              (sum, review) => sum + review.rating,
+              0
+            ) / all.length
           );
         }
-      } catch {
-        /* noop */
+      } catch (error) {
+        console.error('REVIEWS LOAD ERROR:', error);
+        setReviews([]);
       } finally {
         setLoading(false);
       }
@@ -51,77 +53,281 @@ export default function Reviews() {
   }
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-bg to-bg-warm py-16 lg:py-24">
+    <div className="overflow-x-hidden">
+
+      {/* =========================================
+          HERO
+      ========================================= */}
+
+      <section
+        className="
+          bg-gradient-to-br
+          from-bg
+          to-bg-warm
+          py-10
+          sm:py-14
+          lg:py-20
+        "
+      >
         <ScrollReveal>
-        <div className="container-page text-center max-w-3xl mx-auto">
-          <p className="text-gold text-sm font-medium mb-3">
-            Customer Stories
-          </p>
+          <div
+            className="
+              container-page
+              text-center
+              max-w-3xl
+              mx-auto
+              px-4
+              sm:px-6
+            "
+          >
 
-          <h1 className="font-heading text-4xl lg:text-5xl text-ink mb-4">
-            Loved by families across India
-          </h1>
+            <p
+              className="
+                text-gold
+                text-[11px]
+                sm:text-sm
+                font-medium
+                mb-2
+                sm:mb-3
+              "
+            >
+              Customer Stories
+            </p>
 
-          {avgRating > 0 && (
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <StarRating rating={avgRating} size="lg" />
+            <h1
+              className="
+                font-heading
+                text-2xl
+                sm:text-4xl
+                lg:text-5xl
+                leading-tight
+                text-ink
+                mb-3
+                sm:mb-4
+              "
+            >
+              Loved by families across India
+            </h1>
 
-              <span className="text-ink-soft text-lg">
-                {avgRating.toFixed(1)} out of 5
-              </span>
-            </div>
-          )}
-        </div>
+            {avgRating > 0 && (
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  sm:gap-3
+                  mt-3
+                  sm:mt-4
+                "
+              >
+                <StarRating
+                  rating={avgRating}
+                  size="sm"
+                />
+
+                <span
+                  className="
+                    text-ink-soft
+                    text-xs
+                    sm:text-lg
+                  "
+                >
+                  {avgRating.toFixed(1)} out of 5
+                </span>
+              </div>
+            )}
+
+          </div>
         </ScrollReveal>
       </section>
 
-      {/* Reviews */}
-      <section className="container-page py-16">
+
+      {/* =========================================
+          REVIEWS
+      ========================================= */}
+
+      <section
+        className="
+          container-page
+          py-8
+          sm:py-14
+          lg:py-16
+          px-4
+          sm:px-6
+        "
+      >
+
         {reviews.length === 0 ? (
-          <p className="text-center text-ink-soft py-12">
+
+          <p
+            className="
+              text-center
+              text-ink-soft
+              text-sm
+              py-12
+            "
+          >
             No reviews yet.
           </p>
+
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-3
+              gap-3
+              sm:gap-5
+              lg:gap-6
+            "
+          >
+
             {reviews.map((review) => (
-              <div key={review.id} className="card p-6">
-                {/* Rating */}
+
+              <div
+                key={review.id}
+                className="
+                  card
+                  p-3.5
+                  sm:p-5
+                  lg:p-6
+                  rounded-xl
+                  sm:rounded-2xl
+                "
+              >
+
+                {/* =========================
+                    RATING
+                ========================= */}
+
                 <StarRating
                   rating={review.rating}
-                  size="md"
+                  size="sm"
                 />
 
-                {/* Comment */}
-                <p className="text-ink-soft mt-4 leading-relaxed text-sm">
+
+                {/* =========================
+                    COMMENT
+                ========================= */}
+
+                <p
+                  className="
+                    text-ink-soft
+                    mt-2.5
+                    sm:mt-3
+                    lg:mt-4
+                    leading-relaxed
+                    text-[11px]
+                    sm:text-xs
+                    lg:text-sm
+                  "
+                >
                   "{review.comment}"
                 </p>
 
-                {/* User */}
-                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-ink/10">
-                  <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-gold font-heading font-semibold">
-                    {review.user_name?.charAt(0)?.toUpperCase() || 'A'}
+
+                {/* =========================
+                    USER
+                ========================= */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                    sm:gap-2.5
+                    lg:gap-3
+                    mt-3.5
+                    sm:mt-4
+                    lg:mt-6
+                    pt-3.5
+                    sm:pt-4
+                    lg:pt-5
+                    border-t
+                    border-ink/10
+                  "
+                >
+
+                  {/* Avatar */}
+
+                  <div
+                    className="
+                      w-7
+                      h-7
+                      sm:w-8
+                      sm:h-8
+                      lg:w-10
+                      lg:h-10
+                      rounded-full
+                      bg-gold/20
+                      flex
+                      items-center
+                      justify-center
+                      text-gold
+                      text-xs
+                      sm:text-sm
+                      lg:text-base
+                      font-heading
+                      font-semibold
+                      flex-shrink-0
+                    "
+                  >
+                    {review.user_name
+                      ?.charAt(0)
+                      ?.toUpperCase() || 'A'}
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-ink">
-                      {review.user_name}
+
+                  {/* User Details */}
+
+                  <div className="min-w-0 flex-1">
+
+                    <p
+                      className="
+                        text-[11px]
+                        sm:text-xs
+                        lg:text-sm
+                        font-medium
+                        text-ink
+                        truncate
+                      "
+                    >
+                      {review.user_name || 'Anonymous'}
                     </p>
 
-                    <p className="text-xs text-ink-soft">
+                    <p
+                      className="
+                        text-[9px]
+                        sm:text-[10px]
+                        lg:text-xs
+                        text-ink-soft
+                        truncate
+                        mt-0.5
+                      "
+                    >
                       {review.user_location
                         ? `${review.user_location} • `
                         : ''}
                       {formatDate(review.created_at)}
                     </p>
+
                   </div>
+
                 </div>
+
               </div>
+
             ))}
+
           </div>
+
         )}
+
       </section>
+
     </div>
   );
 }

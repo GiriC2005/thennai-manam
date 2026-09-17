@@ -37,7 +37,7 @@ const steps = [
     icon: Droplets,
     num: '05',
     title: 'Hand Bottled',
-    desc: 'The finished oil is hand-bottled and sealed fresh. From tree to bottle in about a day, ensuring you receive the freshest, most aromatic coconut oil possible.',
+    desc: 'The finished oil is carefully hand-bottled and sealed fresh, preserving its natural aroma and goodness. Every step, from coconut selection to traditional wood-pressing and bottling, is handled with care to bring you pure, authentic coconut oil.',
   },
 ];
 

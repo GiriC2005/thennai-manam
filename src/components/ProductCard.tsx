@@ -181,16 +181,23 @@ export default function ProductCard({
       <div
         className="
           relative
-          h-[100px]
-          sm:h-[160px]
-          lg:h-[220px]
+          h-[150px]
+          sm:h-[190px]
+          lg:h-[230px]
           overflow-hidden
           bg-bg-warm
+          flex
+          items-center
+          justify-center
         "
       >
         <Link
           to={`/product/${product.slug}`}
-          className="block w-full h-full"
+          className="
+            block
+            w-full
+            h-full
+          "
         >
           <img
             data-product-image
@@ -200,21 +207,26 @@ export default function ProductCard({
             className="
               w-full
               h-full
-              object-cover
-              group-hover:scale-105
+              object-contain
+              p-3
+              sm:p-4
+              lg:p-5
+              group-hover:scale-[1.04]
               transition-transform
               duration-500
             "
           />
         </Link>
 
-        {/* BADGES */}
+        {/* =====================================
+            BADGES
+        ===================================== */}
 
         <div
           className="
             absolute
-            top-1.5
-            left-1.5
+            top-2
+            left-2
             sm:top-3
             sm:left-3
             flex
@@ -284,13 +296,15 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* ACTION BUTTONS */}
+        {/* =====================================
+            ACTION BUTTONS
+        ===================================== */}
 
         <div
           className="
             absolute
-            top-1.5
-            right-1.5
+            top-2
+            right-2
             sm:top-3
             sm:right-3
             flex
@@ -365,7 +379,9 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* DESKTOP ADD TO CART */}
+        {/* =====================================
+            DESKTOP ADD TO CART
+        ===================================== */}
 
         {!outOfStock && (
           <button
@@ -413,6 +429,8 @@ export default function ProductCard({
           flex-1
         "
       >
+        {/* CATEGORY */}
+
         {product.category && (
           <p
             className="
@@ -427,6 +445,8 @@ export default function ProductCard({
             {product.category.name}
           </p>
         )}
+
+        {/* PRODUCT NAME */}
 
         <Link
           to={`/product/${product.slug}`}
@@ -449,6 +469,8 @@ export default function ProductCard({
           </h3>
         </Link>
 
+        {/* DESCRIPTION */}
+
         <p
           className="
             text-[10px]
@@ -462,7 +484,9 @@ export default function ProductCard({
           {product.short_description}
         </p>
 
-        {/* RATING */}
+        {/* =====================================
+            RATING
+        ===================================== */}
 
         <div
           className="
@@ -502,7 +526,9 @@ export default function ProductCard({
           </span>
         </div>
 
-        {/* PRICE */}
+        {/* =====================================
+            PRICE
+        ===================================== */}
 
         <div
           className="
@@ -553,7 +579,9 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* MOBILE ADD TO CART */}
+        {/* =====================================
+            MOBILE ADD TO CART
+        ===================================== */}
 
         {!outOfStock && (
           <button

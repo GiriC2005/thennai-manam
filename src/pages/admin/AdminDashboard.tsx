@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Star,
   TicketPercent,
+  Image,
 } from 'lucide-react';
 
 import {
@@ -18,6 +19,7 @@ import {
   getDashboardStats,
   getAllReviews,
 } from '@/services/api';
+
 
 import type { Review, Product } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
@@ -172,6 +174,12 @@ export default function AdminDashboard() {
   value: 'Manage',
   icon: TicketPercent,
   link: '/admin/coupons',
+},
+{
+  title: 'Hero Banners',
+  value: 'Manage',
+  icon: Image,
+  link: '/admin/hero-banners',
 },
   ];
 
