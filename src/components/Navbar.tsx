@@ -75,9 +75,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const onScroll = () => {
-      setScrolled(
-        window.scrollY > 20
-      );
+      setScrolled(window.scrollY > 20);
     };
 
     window.addEventListener(
@@ -102,13 +100,12 @@ export default function Navbar() {
       mobileOpen ? 'hidden' : '';
 
     return () => {
-      document.body.style.overflow =
-        '';
+      document.body.style.overflow = '';
     };
   }, [mobileOpen]);
 
   // ==========================================
-  // CLOSE MENU ON PAGE CHANGE
+  // CLOSE USER MENU ON PAGE CHANGE
   // ==========================================
 
   useEffect(() => {
@@ -130,9 +127,7 @@ export default function Navbar() {
 
       if (
         userMenuRef.current &&
-        !userMenuRef.current.contains(
-          target
-        )
+        !userMenuRef.current.contains(target)
       ) {
         setUserMenuOpen(false);
       }
@@ -234,7 +229,7 @@ export default function Navbar() {
   return (
     <>
       {/* =====================================
-          HEADER
+          DESKTOP / MAIN HEADER
       ===================================== */}
 
       <header
@@ -244,20 +239,60 @@ export default function Navbar() {
           left-0
           right-0
           z-50
+          px-3
+          sm:px-5
+          lg:px-7
+          pt-2
           transition-all
           duration-300
-          ${
-            scrolled
-              ? 'bg-bg/85 backdrop-blur-md border-b border-ink/5 shadow-sm'
-              : 'bg-bg/40 backdrop-blur-sm'
-          }
         `}
       >
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* =================================
+            NAVBAR SHAPE
+            Cream + Curved Sides + Shadow
+        ================================= */}
 
-          <div className="h-20 flex items-center justify-between">
+   <nav 
+  className={`
+    max-w-7xl 
+    mx-auto 
+    relative 
+    overflow-visible 
+    bg-[#FFF8E7]
+    backdrop-blur-md 
+    border 
+    border-black/20
+    transition-all 
+    duration-300 
+    rounded-[32px]
+  `} 
+>
+          {/* =================================
+              SUBTLE BOTTOM CURVE
+          ================================= */}
 
-            {/* LOGO */}
+          
+
+          {/* =================================
+              NAV CONTENT
+          ================================= */}
+
+          <div
+            className="
+              h-20
+              px-4
+              sm:px-6
+              lg:px-7
+              flex
+              items-center
+              justify-between
+              gap-4
+            "
+          >
+
+            {/* =================================
+                LOGO
+            ================================= */}
 
             <Link
               to="/"
@@ -265,49 +300,130 @@ export default function Navbar() {
                 setUserMenuOpen(false);
                 setMobileOpen(false);
               }}
-              className="flex items-center gap-3"
+              className="
+                flex
+                items-center
+                gap-3
+                shrink-0
+              "
             >
               <img
                 src={logo}
                 alt="Thennai Manam"
-                className="w-30 h-12 object-contain"
+                className="
+                  w-30
+                  h-12
+                  object-contain
+                "
               />
 
               <div className="hidden sm:block">
-                <p className="font-heading text-lg font-semibold text-ink">
+                <p
+                  className="
+                    font-heading
+                    text-lg
+                    font-semibold
+                    text-ink
+                  "
+                >
                   Thennai Manam
                 </p>
 
-                <p className="font-tamil text-[10px] text-ink-soft">
+                <p
+                  className="
+                    font-tamil
+                    text-[10px]
+                    text-ink-soft
+                  "
+                >
                   மரத்தில் ஆட்டிய தூய்மை
                 </p>
               </div>
             </Link>
 
-            {/* DESKTOP NAV */}
+            {/* =================================
+                DESKTOP NAV
+            ================================= */}
 
-            <div className="hidden lg:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() =>
-                    setUserMenuOpen(false)
-                  }
-                  className="text-sm font-medium text-ink-soft hover:text-ink transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div
+              className="
+                hidden
+                lg:flex
+                items-center
+                gap-6
+              "
+            >
+              {navLinks.map((link) => {
+                const isActive =
+                  location.pathname ===
+                    link.path ||
+                  (
+                    link.path !== '/' &&
+                    location.pathname.startsWith(
+                      `${link.path}/`
+                    )
+                  );
+
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() =>
+                      setUserMenuOpen(false)
+                    }
+                    className={`
+                      relative
+                      py-2
+                      text-sm
+                      font-medium
+                      transition-all
+                      duration-200
+
+                      ${
+                        isActive
+                          ? 'text-palm'
+                          : 'text-ink-soft hover:text-palm'
+                      }
+                    `}
+                  >
+                    {link.label}
+
+                    {isActive && (
+                      <span
+                        className="
+                          absolute
+                          left-1/2
+                          -translate-x-1/2
+                          -bottom-1
+                          w-5
+                          h-0.5
+                          bg-gold
+                          rounded-full
+                        "
+                      />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* ACTIONS */}
+            {/* =================================
+                ACTIONS
+            ================================= */}
 
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div
+              className="
+                flex
+                items-center
+                gap-1
+                sm:gap-2
+              "
+            >
 
               {/* SEARCH */}
 
               <button
+                type="button"
                 onClick={() => {
                   setSearchOpen(
                     (s) => !s
@@ -315,13 +431,22 @@ export default function Navbar() {
 
                   setUserMenuOpen(false);
                 }}
-                className="p-2 rounded-full hover:bg-ink/5 transition-colors"
+                className="
+                  p-2
+                  rounded-full
+                  text-ink
+                  hover:bg-palm/5
+                  hover:text-palm
+                  transition-all
+                "
                 aria-label="Search"
               >
-                <Search className="w-5 h-5 text-ink" />
+                <Search className="w-5 h-5" />
               </button>
 
-              {/* USER */}
+              {/* =================================
+                  USER
+              ================================= */}
 
               {user ? (
                 <div
@@ -329,6 +454,7 @@ export default function Navbar() {
                   className="relative"
                 >
                   <button
+                    type="button"
                     onClick={() => {
                       setUserMenuOpen(
                         (s) => !s
@@ -339,8 +465,10 @@ export default function Navbar() {
                     className="
                       p-2
                       rounded-full
-                      hover:bg-ink/5
-                      transition-colors
+                      text-ink
+                      hover:bg-palm/5
+                      hover:text-palm
+                      transition-all
                       flex
                       items-center
                       gap-1
@@ -350,7 +478,7 @@ export default function Navbar() {
                       userMenuOpen
                     }
                   >
-                    <User className="w-5 h-5 text-ink" />
+                    <User className="w-5 h-5" />
 
                     <ChevronDown
                       className={`
@@ -369,30 +497,53 @@ export default function Navbar() {
                     />
                   </button>
 
+                  {/* USER DROPDOWN */}
+
                   {userMenuOpen && (
                     <div
                       className="
                         absolute
                         right-0
-                        mt-2
+                        mt-3
                         w-56
                         bg-card
-                        rounded-xl
+                        rounded-2xl
                         border
                         border-ink/10
-                        shadow-lg
+                        shadow-2xl
                         py-2
                         z-[70]
                         animate-scale-in
                       "
                     >
-                      <div className="px-4 py-3 border-b border-ink/5">
-                        <p className="text-sm font-medium text-ink truncate">
+                      <div
+                        className="
+                          px-4
+                          py-3
+                          border-b
+                          border-ink/5
+                        "
+                      >
+                        <p
+                          className="
+                            text-sm
+                            font-medium
+                            text-ink
+                            truncate
+                          "
+                        >
                           {profile?.full_name ||
                             user.email}
                         </p>
 
-                        <p className="text-xs text-ink-soft truncate mt-0.5">
+                        <p
+                          className="
+                            text-xs
+                            text-ink-soft
+                            truncate
+                            mt-0.5
+                          "
+                        >
                           {user.email}
                         </p>
                       </div>
@@ -402,7 +553,16 @@ export default function Navbar() {
                         onClick={() =>
                           setUserMenuOpen(false)
                         }
-                        className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-ink/5 hover:text-ink transition-colors"
+                        className="
+                          block
+                          px-4
+                          py-2.5
+                          text-sm
+                          text-ink-soft
+                          hover:bg-palm/5
+                          hover:text-palm
+                          transition-colors
+                        "
                       >
                         My Account
                       </Link>
@@ -412,7 +572,16 @@ export default function Navbar() {
                         onClick={() =>
                           setUserMenuOpen(false)
                         }
-                        className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-ink/5 hover:text-ink transition-colors"
+                        className="
+                          block
+                          px-4
+                          py-2.5
+                          text-sm
+                          text-ink-soft
+                          hover:bg-palm/5
+                          hover:text-palm
+                          transition-colors
+                        "
                       >
                         My Orders
                       </Link>
@@ -422,7 +591,16 @@ export default function Navbar() {
                         onClick={() =>
                           setUserMenuOpen(false)
                         }
-                        className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-ink/5 hover:text-ink transition-colors"
+                        className="
+                          block
+                          px-4
+                          py-2.5
+                          text-sm
+                          text-ink-soft
+                          hover:bg-palm/5
+                          hover:text-palm
+                          transition-colors
+                        "
                       >
                         Wishlist
                       </Link>
@@ -433,19 +611,45 @@ export default function Navbar() {
                           onClick={() =>
                             setUserMenuOpen(false)
                           }
-                          className="block px-4 py-2.5 text-sm text-gold font-medium hover:bg-gold/5 transition-colors"
+                          className="
+                            block
+                            px-4
+                            py-2.5
+                            text-sm
+                            text-gold-deep
+                            font-medium
+                            hover:bg-gold/5
+                            transition-colors
+                          "
                         >
                           Admin Dashboard
                         </Link>
                       )}
 
-                      <div className="h-px bg-ink/5 my-1" />
+                      <div
+                        className="
+                          h-px
+                          bg-ink/5
+                          my-1
+                        "
+                      />
 
                       <button
+                        type="button"
                         onClick={
                           handleSignOut
                         }
-                        className="block w-full text-left px-4 py-2.5 text-sm text-copper hover:bg-copper/5 transition-colors"
+                        className="
+                          block
+                          w-full
+                          text-left
+                          px-4
+                          py-2.5
+                          text-sm
+                          text-copper
+                          hover:bg-copper/5
+                          transition-colors
+                        "
                       >
                         Sign Out
                       </button>
@@ -455,15 +659,22 @@ export default function Navbar() {
               ) : (
                 <Link
                   to="/login"
-                  className="p-2 rounded-full hover:bg-ink/5 transition-colors"
+                  className="
+                    p-2
+                    rounded-full
+                    text-ink
+                    hover:bg-palm/5
+                    hover:text-palm
+                    transition-all
+                  "
                   aria-label="Login"
                 >
-                  <User className="w-5 h-5 text-ink" />
+                  <User className="w-5 h-5" />
                 </Link>
               )}
 
               {/* =================================
-                  WISHLIST TARGET
+                  WISHLIST
               ================================= */}
 
               <Link
@@ -475,14 +686,15 @@ export default function Navbar() {
                 className="
                   p-2
                   rounded-full
-                  hover:bg-ink/5
-                  transition-colors
+                  text-ink
+                  hover:bg-palm/5
+                  hover:text-palm
+                  transition-all
                   relative
-                  origin-center
                 "
                 aria-label="Wishlist"
               >
-                <Heart className="w-5 h-5 text-ink" />
+                <Heart className="w-5 h-5" />
 
                 {wishlistCount > 0 && (
                   <span
@@ -490,8 +702,9 @@ export default function Navbar() {
                       absolute
                       -top-0.5
                       -right-0.5
-                      w-4
+                      min-w-4
                       h-4
+                      px-1
                       rounded-full
                       bg-copper
                       text-white
@@ -508,7 +721,7 @@ export default function Navbar() {
               </Link>
 
               {/* =================================
-                  CART TARGET
+                  CART
               ================================= */}
 
               <Link
@@ -520,14 +733,15 @@ export default function Navbar() {
                 className="
                   p-2
                   rounded-full
-                  hover:bg-ink/5
-                  transition-colors
+                  text-ink
+                  hover:bg-palm/5
+                  hover:text-palm
+                  transition-all
                   relative
-                  origin-center
                 "
                 aria-label="Cart"
               >
-                <ShoppingCart className="w-5 h-5 text-ink" />
+                <ShoppingCart className="w-5 h-5" />
 
                 {totalItems > 0 && (
                   <span
@@ -535,8 +749,9 @@ export default function Navbar() {
                       absolute
                       -top-0.5
                       -right-0.5
-                      w-4
+                      min-w-4
                       h-4
+                      px-1
                       rounded-full
                       bg-palm
                       text-white
@@ -552,9 +767,12 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* MOBILE MENU */}
+              {/* =================================
+                  MOBILE MENU BUTTON
+              ================================= */}
 
               <button
+                type="button"
                 onClick={() => {
                   setMobileOpen(true);
                   setUserMenuOpen(false);
@@ -562,24 +780,39 @@ export default function Navbar() {
                 className="
                   p-2
                   rounded-full
-                  hover:bg-ink/5
-                  transition-colors
+                  text-ink
+                  hover:bg-palm/5
+                  hover:text-palm
+                  transition-all
                   lg:hidden
                 "
                 aria-label="Menu"
               >
-                <Menu className="w-5 h-5 text-ink" />
+                <Menu className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* SEARCH */}
+          {/* =================================
+              SEARCH BAR
+          ================================= */}
 
           {searchOpen && (
-            <div className="pb-4 animate-fade-in-down">
+            <div
+              className="
+                px-4
+                sm:px-6
+                lg:px-7
+                pb-4
+                animate-fade-in-down
+              "
+            >
               <form
                 onSubmit={handleSearch}
-                className="flex gap-2"
+                className="
+                  flex
+                  gap-2
+                "
               >
                 <input
                   type="text"
@@ -590,13 +823,20 @@ export default function Navbar() {
                     )
                   }
                   placeholder="Search for coconut oil, hair care, combo packs..."
-                  className="input-field"
+                  className="
+                    input-field
+                    bg-white
+                    border-ink/10
+                  "
                   autoFocus
                 />
 
                 <button
                   type="submit"
-                  className="btn-primary shrink-0"
+                  className="
+                    btn-primary
+                    shrink-0
+                  "
                 >
                   <Search className="w-4 h-4" />
                 </button>
@@ -611,7 +851,15 @@ export default function Navbar() {
       ========================================= */}
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div
+          className="
+            fixed
+            inset-0
+            z-[60]
+            lg:hidden
+          "
+        >
+          {/* OVERLAY */}
 
           <div
             className="
@@ -625,6 +873,8 @@ export default function Navbar() {
             }
           />
 
+          {/* DRAWER */}
+
           <div
             className="
               absolute
@@ -637,8 +887,11 @@ export default function Navbar() {
               shadow-2xl
               animate-slide-in-right
               overflow-y-auto
+              rounded-l-[32px]
             "
           >
+            {/* DRAWER HEADER */}
+
             <div
               className="
                 flex
@@ -649,48 +902,104 @@ export default function Navbar() {
                 border-ink/5
               "
             >
-              <span className="font-heading font-semibold text-ink">
-                Menu
-              </span>
+              <div className="flex items-center gap-3">
+                <img
+                  src={logo}
+                  alt="Thennai Manam"
+                  className="
+                    w-24
+                    h-10
+                    object-contain
+                  "
+                />
+
+                <span
+                  className="
+                    font-heading
+                    font-semibold
+                    text-ink
+                  "
+                >
+                  Menu
+                </span>
+              </div>
 
               <button
+                type="button"
                 onClick={() =>
                   setMobileOpen(false)
                 }
-                className="p-2 rounded-full hover:bg-ink/5"
+                className="
+                  p-2
+                  rounded-full
+                  hover:bg-palm/5
+                  text-ink
+                  transition-colors
+                "
                 aria-label="Close menu"
               >
-                <X className="w-5 h-5 text-ink" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 flex flex-col gap-1">
+            {/* MENU LINKS */}
 
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => {
-                    setMobileOpen(false);
-                    setUserMenuOpen(false);
-                  }}
-                  className="
-                    px-4
-                    py-3
-                    text-base
-                    font-medium
-                    text-ink-soft
-                    hover:text-ink
-                    hover:bg-ink/5
-                    rounded-xl
-                    transition-colors
-                  "
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div
+              className="
+                p-4
+                flex
+                flex-col
+                gap-1
+              "
+            >
+              {navLinks.map((link) => {
+                const isActive =
+                  location.pathname ===
+                    link.path ||
+                  (
+                    link.path !== '/' &&
+                    location.pathname.startsWith(
+                      `${link.path}/`
+                    )
+                  );
 
-              <div className="h-px bg-ink/5 my-2" />
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setUserMenuOpen(false);
+                    }}
+                    className={`
+                      px-4
+                      py-3
+                      text-base
+                      font-medium
+                      rounded-xl
+                      transition-colors
+
+                      ${
+                        isActive
+                          ? 'bg-palm/10 text-palm'
+                          : 'text-ink-soft hover:text-palm hover:bg-palm/5'
+                      }
+                    `}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+
+              <div
+                className="
+                  h-px
+                  bg-ink/5
+                  my-2
+                "
+              />
+
+              {/* WISHLIST */}
 
               <Link
                 to="/wishlist"
@@ -703,14 +1012,16 @@ export default function Navbar() {
                   text-base
                   font-medium
                   text-ink-soft
-                  hover:text-ink
-                  hover:bg-ink/5
+                  hover:text-palm
+                  hover:bg-palm/5
                   rounded-xl
                   transition-colors
                 "
               >
                 Wishlist
               </Link>
+
+              {/* USER */}
 
               {user ? (
                 <>
@@ -719,7 +1030,17 @@ export default function Navbar() {
                     onClick={() =>
                       setMobileOpen(false)
                     }
-                    className="px-4 py-3 text-base font-medium text-ink-soft hover:text-ink hover:bg-ink/5 rounded-xl transition-colors"
+                    className="
+                      px-4
+                      py-3
+                      text-base
+                      font-medium
+                      text-ink-soft
+                      hover:text-palm
+                      hover:bg-palm/5
+                      rounded-xl
+                      transition-colors
+                    "
                   >
                     My Account
                   </Link>
@@ -729,7 +1050,17 @@ export default function Navbar() {
                     onClick={() =>
                       setMobileOpen(false)
                     }
-                    className="px-4 py-3 text-base font-medium text-ink-soft hover:text-ink hover:bg-ink/5 rounded-xl transition-colors"
+                    className="
+                      px-4
+                      py-3
+                      text-base
+                      font-medium
+                      text-ink-soft
+                      hover:text-palm
+                      hover:bg-palm/5
+                      rounded-xl
+                      transition-colors
+                    "
                   >
                     My Orders
                   </Link>
@@ -740,17 +1071,37 @@ export default function Navbar() {
                       onClick={() =>
                         setMobileOpen(false)
                       }
-                      className="px-4 py-3 text-base font-medium text-gold hover:bg-gold/5 rounded-xl transition-colors"
+                      className="
+                        px-4
+                        py-3
+                        text-base
+                        font-medium
+                        text-gold-deep
+                        hover:bg-gold/10
+                        rounded-xl
+                        transition-colors
+                      "
                     >
                       Admin Dashboard
                     </Link>
                   )}
 
                   <button
+                    type="button"
                     onClick={
                       handleSignOut
                     }
-                    className="px-4 py-3 text-base font-medium text-copper hover:bg-copper/5 rounded-xl text-left transition-colors"
+                    className="
+                      px-4
+                      py-3
+                      text-base
+                      font-medium
+                      text-copper
+                      hover:bg-copper/5
+                      rounded-xl
+                      text-left
+                      transition-colors
+                    "
                   >
                     Sign Out
                   </button>
@@ -762,7 +1113,17 @@ export default function Navbar() {
                     onClick={() =>
                       setMobileOpen(false)
                     }
-                    className="px-4 py-3 text-base font-medium text-ink-soft hover:text-ink hover:bg-ink/5 rounded-xl transition-colors"
+                    className="
+                      px-4
+                      py-3
+                      text-base
+                      font-medium
+                      text-ink-soft
+                      hover:text-palm
+                      hover:bg-palm/5
+                      rounded-xl
+                      transition-colors
+                    "
                   >
                     Login
                   </Link>
@@ -772,7 +1133,17 @@ export default function Navbar() {
                     onClick={() =>
                       setMobileOpen(false)
                     }
-                    className="px-4 py-3 text-base font-medium text-ink-soft hover:text-ink hover:bg-ink/5 rounded-xl transition-colors"
+                    className="
+                      px-4
+                      py-3
+                      text-base
+                      font-medium
+                      text-ink-soft
+                      hover:text-palm
+                      hover:bg-palm/5
+                      rounded-xl
+                      transition-colors
+                    "
                   >
                     Register
                   </Link>

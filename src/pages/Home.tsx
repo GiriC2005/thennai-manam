@@ -14,7 +14,13 @@ import { useEffect, useState } from 'react';
 
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-
+import flipkartImg from '@/assets/flipkart.png';
+import amazonImg from '@/assets/amazon.png';
+import meeshoImg from '@/assets/meesho.png';
+import fssaiImg from '@/assets/fssai.png';
+import blinkitImg from '@/assets/blinkit.png';
+import jiomartImg from '@/assets/jiomart.png';
+import snapdealImg from '@/assets/snapdeal.png';
 import type {
   Product,
   Category,
@@ -315,7 +321,7 @@ export default function Home() {
                   mb-6
                 "
               >
-                Cold-pressed & the marachekku way.
+                Cold-pressed & The Marachekku Way.
               </p>
 
 
@@ -424,12 +430,12 @@ export default function Home() {
             </div>
 
 
-            {/* =====================================
-                HERO IMAGE
-                ONLY IMAGE COMES FROM ADMIN
-            ===================================== */}
+    {/* =====================================
+    HERO IMAGE
+    ONLY IMAGE COMES FROM ADMIN
+===================================== */}
 
-             <div
+<div
   data-aos="fade-up"
   data-aos-duration="900"
   data-aos-delay="250"
@@ -439,229 +445,222 @@ export default function Home() {
     lg:mt-8
   "
 >
+  <div
+    className="
+      relative
+      w-full
+      aspect-[16/9]
+      rounded-2xl
+      sm:rounded-3xl
+      overflow-hidden
+      shadow-3xl
+      bg-bg-warm
+    "
+  >
 
-              <div
-                className="
-                  relative
-                  w-full
-                  aspect-[4/3]
-                  sm:aspect-[5/3]
-                  rounded-2xl
-                  sm:rounded-3xl
-                  overflow-hidden
-                  shadow-3xl
-                  bg-bg-warm
-                "
-              >
+    {/* =================================
+        HERO SLIDES
+    ================================= */}
 
-                {/* =================================
-                    HERO IMAGES
-                ================================= */}
+    {heroSlides.map((banner, index) => {
+      const desktopImage =
+        banner.desktop_image_url;
 
-                {heroSlides.map(
-                  (banner, index) => {
+      const mobileImage =
+        banner.mobile_image_url ||
+        banner.desktop_image_url;
 
-                    const desktopImage =
-                      banner.desktop_image_url;
+      return (
+        <picture
+          key={
+            banner.id ||
+            index
+          }
+          className={`
+            absolute
+            inset-0
+            block
+            transition-all
+            duration-700
+            ease-in-out
+            ${
+              currentSlide === index
+                ? 'opacity-100'
+                : 'opacity-0'
+            }
+          `}
+        >
 
-                    const mobileImage =
-                      banner.mobile_image_url ||
-                      banner.desktop_image_url;
+          {/* Mobile image */}
+          <source
+            media="(max-width: 639px)"
+            srcSet={mobileImage}
+          />
 
-                    return (
-                      <picture
-                        key={
-                          banner.id ||
-                          index
-                        }
-                      >
+          {/* Desktop image */}
+          <img
+            src={desktopImage}
+            alt="Thennai Manam Coconut Oil"
+            loading={
+              index === 0
+                ? 'eager'
+                : 'lazy'
+            }
+            // fetchPriority={
+            //   index === 0
+            //     ? 'high'
+            //     : 'low'
+            // }
+            decoding="async"
+            className="
+              w-full
+              h-full
+              object-cover
+              object-center
+              block
+            "
+          />
 
-                        <source
-                          media="(max-width: 639px)"
-                          srcSet={
-                            mobileImage
-                          }
-                        />
+        </picture>
+      );
+    })}
 
-                        <img
-                          src={
-                            desktopImage
-                          }
-                          alt="Thennai Manam Coconut Oil"
-                          loading={
-                            index === 0
-                              ? 'eager'
-                              : 'lazy'
-                          }
-                          className={`
-                            absolute
-                            inset-0
-                            w-full
-                            h-full
-                            object-cover
-                            transition-all
-                            duration-700
-                            ease-in-out
-                            ${
-                              currentSlide ===
-                              index
-                                ? 'opacity-100 scale-100'
-                                : 'opacity-0 scale-105'
-                            }
-                          `}
-                        />
+    {/* =================================
+        GRADIENT
+    ================================= */}
 
-                      </picture>
-                    );
-                  }
-                )}
+    <div
+      className="
+        absolute
+        inset-0
+        bg-gradient-to-t
+        from-ink/20
+        via-transparent
+        to-transparent
+        pointer-events-none
+        z-[2]
+      "
+    />
 
+    {/* =================================
+        PREVIOUS BUTTON
+    ================================= */}
 
-                {/* Bottom Gradient */}
+    {heroSlides.length > 1 && (
+      <button
+        type="button"
+        onClick={prevSlide}
+        aria-label="Previous image"
+        className="
+          absolute
+          left-3
+          sm:left-4
+          top-1/2
+          -translate-y-1/2
+          w-9
+          h-9
+          sm:w-10
+          sm:h-10
+          rounded-full
+          bg-white/90
+          backdrop-blur-sm
+          text-ink
+          flex
+          items-center
+          justify-center
+          shadow-md
+          hover:bg-white
+          hover:scale-105
+          transition-all
+          z-10
+        "
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+    )}
 
-                <div
-                  className="
-                    absolute
-                    inset-0
-                    bg-gradient-to-t
-                    from-ink/30
-                    via-transparent
-                    to-transparent
-                    pointer-events-none
-                  "
-                />
+    {/* =================================
+        NEXT BUTTON
+    ================================= */}
 
+    {heroSlides.length > 1 && (
+      <button
+        type="button"
+        onClick={nextSlide}
+        aria-label="Next image"
+        className="
+          absolute
+          right-3
+          sm:right-4
+          top-1/2
+          -translate-y-1/2
+          w-9
+          h-9
+          sm:w-10
+          sm:h-10
+          rounded-full
+          bg-white/90
+          backdrop-blur-sm
+          text-ink
+          flex
+          items-center
+          justify-center
+          shadow-md
+          hover:bg-white
+          hover:scale-105
+          transition-all
+          z-10
+        "
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+    )}
 
-                {/* =================================
-                    PREVIOUS BUTTON
-                ================================= */}
+    {/* =================================
+        SLIDER DOTS
+    ================================= */}
 
-                {heroSlides.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={prevSlide}
-                    aria-label="Previous image"
-                    className="
-                      absolute
-                      left-3
-                      sm:left-4
-                      top-1/2
-                      -translate-y-1/2
-                      w-9
-                      h-9
-                      sm:w-10
-                      sm:h-10
-                      rounded-full
-                      bg-white/90
-                      backdrop-blur-sm
-                      text-ink
-                      flex
-                      items-center
-                      justify-center
-                      shadow-md
-                      hover:bg-white
-                      hover:scale-105
-                      transition-all
-                      z-10
-                    "
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                )}
+    {heroSlides.length > 1 && (
+      <div
+        className="
+          absolute
+          bottom-4
+          left-1/2
+          -translate-x-1/2
+          flex
+          items-center
+          gap-2
+          z-10
+        "
+      >
+        {heroSlides.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() =>
+              setCurrentSlide(index)
+            }
+            aria-label={`Go to slide ${
+              index + 1
+            }`}
+            className={`
+              h-2
+              rounded-full
+              transition-all
+              duration-300
+              ${
+                currentSlide === index
+                  ? 'w-7 bg-gold'
+                  : 'w-2 bg-white/70 hover:bg-white'
+              }
+            `}
+          />
+        ))}
+      </div>
+    )}
 
-
-                {/* =================================
-                    NEXT BUTTON
-                ================================= */}
-
-                {heroSlides.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={nextSlide}
-                    aria-label="Next image"
-                    className="
-                      absolute
-                      right-3
-                      sm:right-4
-                      top-1/2
-                      -translate-y-1/2
-                      w-9
-                      h-9
-                      sm:w-10
-                      sm:h-10
-                      rounded-full
-                      bg-white/90
-                      backdrop-blur-sm
-                      text-ink
-                      flex
-                      items-center
-                      justify-center
-                      shadow-md
-                      hover:bg-white
-                      hover:scale-105
-                      transition-all
-                      z-10
-                    "
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
-
-
-                {/* =================================
-                    SLIDER DOTS
-                ================================= */}
-
-                {heroSlides.length > 1 && (
-                  <div
-                    className="
-                      absolute
-                      bottom-4
-                      left-1/2
-                      -translate-x-1/2
-                      flex
-                      items-center
-                      gap-2
-                      z-10
-                    "
-                  >
-
-                    {heroSlides.map(
-                      (_, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() =>
-                            setCurrentSlide(
-                              index
-                            )
-                          }
-                          aria-label={`Go to slide ${
-                            index + 1
-                          }`}
-                          className={`
-                            h-2
-                            rounded-full
-                            transition-all
-                            duration-300
-                            ${
-                              currentSlide ===
-                              index
-                                ? 'w-7 bg-gold'
-                                : 'w-2 bg-white/70 hover:bg-white'
-                            }
-                          `}
-                        />
-                      )
-                    )}
-
-                  </div>
-                )}
-
-              </div>
-
-            </div>
-
+  </div>
+</div>
           </div>
 
         </div>
@@ -727,7 +726,135 @@ export default function Home() {
         </div>
 
       </section>
+{/* =========================================
+    AVAILABLE ON / FSSAI MARQUEE
+========================================= */}
 
+<section className="w-full overflow-hidden bg-white border-y border-ink/5 py-5">
+  <div className="relative flex overflow-hidden">
+
+    <div className="flex min-w-max animate-marquee items-center">
+
+      {/* SET 1 */}
+      <div className="flex items-center gap-14 px-7">
+
+        {/* <span className="text-sm font-medium text-ink-soft whitespace-nowrap">
+          Available on
+        </span> */}
+
+        <img
+          src={amazonImg}
+          alt="Available on Amazon"
+          className="h-10 w-auto object-contain"
+          loading="lazy"
+        />
+
+        <img
+          src={flipkartImg}
+          alt="Available on Flipkart"
+          className="h-10 w-auto object-contain"
+          loading="lazy"
+        />
+
+       
+
+        <img
+          src={meeshoImg}
+          alt="Available on Meesho"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+
+          <img
+          src={blinkitImg}
+          alt="Available on Blinkit"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+
+          <img
+          src={jiomartImg}
+          alt="Available on JioMart"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+        
+          <img
+          src={snapdealImg}
+          alt="Available on Snapdeal"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+        
+        
+
+
+
+
+      </div>
+
+        <div className="h-8 w-px bg-ink/10" />
+
+      {/* SET 2 - DUPLICATE FOR SEAMLESS LOOP */}
+      <div className="flex items-center gap-14 px-7">
+
+        {/* <span className="text-sm font-medium text-ink-soft whitespace-nowrap">
+          Available on
+        </span> */}
+
+         <img
+          src={amazonImg}
+          alt="Available on Amazon"
+          className="h-10 w-auto object-contain"
+          loading="lazy"
+        />
+
+        <img
+          src={flipkartImg}
+          alt="Available on Flipkart"
+          className="h-10 w-auto object-contain"
+          loading="lazy"
+        />
+
+       
+
+        <img
+          src={meeshoImg}
+          alt="Available on Meesho"
+          className="h-10 w-auto object-contain"
+          loading="lazy"
+        />
+        
+          <img
+          src={blinkitImg}
+          alt="Available on Blinkit"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+
+          <img
+          src={jiomartImg}
+          alt="Available on JioMart"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+        
+          <img
+          src={snapdealImg}
+          alt="Available on Snapdeal"
+          className="h-10 w-200 object-contain"
+          loading="lazy"
+        />
+
+        <div className="h-8 w-px bg-ink/10" />
+
+       
+      </div>
+
+    </div>
+
+  </div>
+</section>
 
       {/* =========================================
           SHOP BY CATEGORY

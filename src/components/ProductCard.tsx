@@ -27,11 +27,13 @@ interface Props {
   onQuickView?: (
     product: Product
   ) => void;
+  imagePriority?: boolean;
 }
 
 export default function ProductCard({
   product,
   onQuickView,
+  imagePriority = false,
 }: Props) {
   const { addToCart } =
     useCart();
@@ -199,23 +201,22 @@ export default function ProductCard({
             h-full
           "
         >
-          <img
-            data-product-image
-            src={product.images?.[0]}
-            alt={product.name}
-            loading="lazy"
-            className="
-              w-full
-              h-full
-              object-contain
-              p-3
-              sm:p-4
-              lg:p-5
-              group-hover:scale-[1.04]
-              transition-transform
-              duration-500
-            "
-          />
+               <img
+  data-product-image
+  src={product.images?.[0]}
+  alt={`${product.name} - Thennai Manam Coconut Oil`}
+  loading={imagePriority ? 'eager' : 'lazy'}
+  decoding="async"
+  className="
+    w-full
+    h-full
+    object-contain
+    p-3
+    sm:p-4
+    lg:p-5
+    group-hover:scale-[1.04]
+  "
+/>
         </Link>
 
         {/* =====================================

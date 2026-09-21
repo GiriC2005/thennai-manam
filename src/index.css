@@ -351,3 +351,24 @@ body {
 [data-aos] {
   overflow-x: clip;
 }
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 22s linear infinite;
+  width: max-content;
+}
+
+@media (max-width: 640px) {
+  .animate-marquee {
+    animation-duration: 16s;
+  }
+}

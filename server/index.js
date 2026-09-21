@@ -38,18 +38,15 @@ const serviceKey =
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://thennaimanam.netlify.app',,
+  'https://thennaimanam.netlify.app',
   'https://thennai-manam-api.onrender.com',
-  'https://thennai-manam.vercel.app'
-  
-
+  'https://thennai-manam.vercel.app',
+  'https://thennaimanamoils.netlify.app',
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without origin
-      // such as Postman/server-to-server requests
       if (!origin) {
         return callback(null, true);
       }
@@ -82,10 +79,6 @@ app.use(
     ],
   })
 );
-
-/*
-  Explicitly handle preflight requests.
-*/
 
 app.use(express.json());
 
@@ -143,34 +136,379 @@ function orderNumber() {
 }
 
 /* =====================================================
+   EMAIL - NEW ORDER NOTIFICATION
+===================================================== */
+
+async function sendNewOrderEmail(
+  order,
+  customerEmail
+) {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error(
+        'EMAIL ERROR: RESEND_API_KEY is missing'
+      );
+      return;
+    }
+
+    if (!process.env.ORDER_NOTIFICATION_EMAIL) {
+      console.error(
+        'EMAIL ERROR: ORDER_NOTIFICATION_EMAIL is missing'
+      );
+      return;
+    }
+
+    const items = Array.isArray(order?.items)
+      ? order.items
+      : [];
+
+    const itemsHtml = items
+      .map((item) => {
+        const name =
+          item?.name ||
+          item?.product_name ||
+          item?.title ||
+          'Product';
+
+        const size =
+          item?.size ||
+          item?.variant ||
+          '';
+
+        const quantity =
+          Number(item?.quantity || 1);
+
+        const price =
+          Number(
+            item?.price ||
+            item?.unit_price ||
+            0
+          );
+
+        return `
+          <tr>
+            <td style="
+              padding:10px;
+              border-bottom:1px solid #e5e5e5;
+            ">
+              ${name}${size ? ` - ${size}` : ''}
+            </td>
+
+            <td style="
+              padding:10px;
+              border-bottom:1px solid #e5e5e5;
+              text-align:center;
+            ">
+              ${quantity}
+            </td>
+
+            <td style="
+              padding:10px;
+              border-bottom:1px solid #e5e5e5;
+              text-align:right;
+            ">
+              ₹${price.toFixed(2)}
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const response = await fetch(
+      'https://api.resend.com/emails',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+
+          Authorization:
+            `Bearer ${process.env.RESEND_API_KEY}`,
+        },
+
+        body: JSON.stringify({
+          from:
+            process.env.EMAIL_FROM ||
+            'onboarding@resend.dev',
+
+          to: [
+            process.env.ORDER_NOTIFICATION_EMAIL,
+          ],
+
+          subject:
+            `New Order - ${
+              order?.order_number ||
+              'Thennai Manam'
+            }`,
+
+          html: `
+            <div
+              style="
+                font-family:Arial,Helvetica,sans-serif;
+                max-width:700px;
+                margin:0 auto;
+                color:#222;
+              "
+            >
+
+              <div
+                style="
+                  padding:24px;
+                  background:#f7f1df;
+                  border-radius:12px;
+                "
+              >
+                <h2
+                  style="
+                    margin:0 0 8px;
+                    color:#315d32;
+                  "
+                >
+                  New Thennai Manam Order
+                </h2>
+
+                <p style="margin:0;">
+                  A new order has been placed
+                  on your website.
+                </p>
+              </div>
+
+              <div style="padding:20px 0;">
+
+                <h3>Order Details</h3>
+
+                <p>
+                  <strong>Order Number:</strong>
+                  ${order?.order_number || 'N/A'}
+                </p>
+
+                <p>
+                  <strong>Customer Email:</strong>
+                  ${customerEmail || 'N/A'}
+                </p>
+
+                <p>
+                  <strong>Payment Method:</strong>
+                  ${order?.payment_method || 'N/A'}
+                </p>
+
+                <p>
+                  <strong>Payment Status:</strong>
+                  ${order?.payment_status || 'N/A'}
+                </p>
+
+                <p>
+                  <strong>Order Status:</strong>
+                  ${order?.order_status || 'N/A'}
+                </p>
+
+                <h3>Products</h3>
+
+                <table
+                  style="
+                    width:100%;
+                    border-collapse:collapse;
+                    border:1px solid #e5e5e5;
+                  "
+                >
+
+                  <thead>
+                    <tr>
+                      <th
+                        style="
+                          padding:10px;
+                          border-bottom:2px solid #333;
+                          text-align:left;
+                        "
+                      >
+                        Product
+                      </th>
+
+                      <th
+                        style="
+                          padding:10px;
+                          border-bottom:2px solid #333;
+                          text-align:center;
+                        "
+                      >
+                        Qty
+                      </th>
+
+                      <th
+                        style="
+                          padding:10px;
+                          border-bottom:2px solid #333;
+                          text-align:right;
+                        "
+                      >
+                        Price
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    ${
+                      itemsHtml ||
+                      `
+                        <tr>
+                          <td
+                            colspan="3"
+                            style="
+                              padding:10px;
+                              text-align:center;
+                            "
+                          >
+                            No product details available
+                          </td>
+                        </tr>
+                      `
+                    }
+                  </tbody>
+
+                </table>
+
+                <div
+                  style="
+                    margin-top:20px;
+                    padding:16px;
+                    background:#fafafa;
+                    border-radius:8px;
+                  "
+                >
+
+                  <p style="margin:6px 0;">
+                    <strong>Subtotal:</strong>
+                    ₹${Number(
+                      order?.subtotal || 0
+                    ).toFixed(2)}
+                  </p>
+
+                  <p style="margin:6px 0;">
+                    <strong>Discount:</strong>
+                    ₹${Number(
+                      order?.discount || 0
+                    ).toFixed(2)}
+                  </p>
+
+                  <p style="margin:6px 0;">
+                    <strong>Delivery:</strong>
+                    ₹${Number(
+                      order?.delivery_charge || 0
+                    ).toFixed(2)}
+                  </p>
+
+                  <h2 style="margin:12px 0 0;">
+                    Total: ₹${Number(
+                      order?.total || 0
+                    ).toFixed(2)}
+                  </h2>
+
+                </div>
+
+                <h3>Delivery Address</h3>
+
+                <p style="white-space:pre-line;">
+                  ${
+                    typeof order?.address ===
+                    'string'
+                      ? order.address
+                      : JSON.stringify(
+                          order?.address || {}
+                        )
+                  }
+                </p>
+
+              </div>
+
+              <p
+                style="
+                  color:#777;
+                  font-size:13px;
+                "
+              >
+                This is an automatic notification
+                from Thennai Manam.
+              </p>
+
+            </div>
+          `,
+        }),
+      }
+    );
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      console.error(
+        'RESEND EMAIL ERROR:',
+        response.status,
+        result
+      );
+
+      return;
+    }
+
+    console.log(
+      'NEW ORDER EMAIL SENT:',
+      result
+    );
+  } catch (error) {
+    console.error(
+      'RESEND EMAIL EXCEPTION:',
+      error
+    );
+  }
+}
+
+/* =====================================================
    AUTH MIDDLEWARE
 ===================================================== */
 
-async function auth(req, res, next) {
+async function auth(
+  req,
+  res,
+  next
+) {
   try {
     const token = (
       req.headers.authorization || ''
-    ).replace(/^Bearer\s+/i, '');
+    ).replace(
+      /^Bearer\s+/i,
+      ''
+    );
 
     if (!token) {
       return res.status(401).json({
-        error: 'Authentication required',
+        error:
+          'Authentication required',
       });
     }
 
     const {
       data,
       error,
-    } = await authClient.auth.getUser(token);
+    } =
+      await authClient.auth.getUser(
+        token
+      );
 
-    if (error || !data?.user) {
+    if (
+      error ||
+      !data?.user
+    ) {
       return res.status(401).json({
-        error: 'Invalid session',
+        error:
+          'Invalid session',
       });
     }
 
-    req.user = data.user;
-    req.token = token;
+    req.user =
+      data.user;
+
+    req.token =
+      token;
 
     next();
   } catch (error) {
@@ -180,7 +518,8 @@ async function auth(req, res, next) {
     );
 
     return res.status(401).json({
-      error: 'Authentication failed',
+      error:
+        'Authentication failed',
     });
   }
 }
@@ -189,16 +528,24 @@ async function auth(req, res, next) {
    ADMIN MIDDLEWARE
 ===================================================== */
 
-async function admin(req, res, next) {
+async function admin(
+  req,
+  res,
+  next
+) {
   try {
     const {
       data,
       error,
-    } = await db
-      .from('profiles')
-      .select('role')
-      .eq('id', req.user.id)
-      .maybeSingle();
+    } =
+      await db
+        .from('profiles')
+        .select('role')
+        .eq(
+          'id',
+          req.user.id
+        )
+        .maybeSingle();
 
     if (error) {
       console.error(
@@ -207,13 +554,18 @@ async function admin(req, res, next) {
       );
 
       return res.status(500).json({
-        error: error.message,
+        error:
+          error.message,
       });
     }
 
-    if (data?.role !== 'admin') {
+    if (
+      data?.role !==
+      'admin'
+    ) {
       return res.status(403).json({
-        error: 'Admin access required',
+        error:
+          'Admin access required',
       });
     }
 
@@ -225,7 +577,8 @@ async function admin(req, res, next) {
     );
 
     return res.status(500).json({
-      error: 'Admin authentication failed',
+      error:
+        'Admin authentication failed',
     });
   }
 }
@@ -239,8 +592,10 @@ app.get(
   (req, res) => {
     res.json({
       ok: true,
-      razorpay: !!razorpay,
-      server: 'running',
+      razorpay:
+        !!razorpay,
+      server:
+        'running',
     });
   }
 );
@@ -276,35 +631,53 @@ app.post(
         });
       }
 
-      const amount = Math.round(
-        Number(req.body.amount) * 100
-      );
+      const amount =
+        Math.round(
+          Number(
+            req.body.amount
+          ) * 100
+        );
 
       if (
-        !Number.isFinite(amount) ||
+        !Number.isFinite(
+          amount
+        ) ||
         amount <= 0
       ) {
         return res.status(400).json({
-          error: 'Invalid amount',
+          error:
+            'Invalid amount',
         });
       }
 
       const rp =
         await razorpay.orders.create({
           amount,
-          currency: 'INR',
-          receipt: orderNumber(),
+          currency:
+            'INR',
+
+          receipt:
+            orderNumber(),
+
           notes: {
-            user_id: req.user.id,
+            user_id:
+              req.user.id,
           },
         });
 
       return res.json({
-        id: rp.id,
-        amount: rp.amount,
-        currency: rp.currency,
+        id:
+          rp.id,
+
+        amount:
+          rp.amount,
+
+        currency:
+          rp.currency,
+
         keyId:
-          process.env.RAZORPAY_KEY_ID,
+          process.env
+            .RAZORPAY_KEY_ID,
       });
     } catch (error) {
       console.error(
@@ -314,7 +687,8 @@ app.post(
 
       return res.status(500).json({
         error:
-          error?.error?.description ||
+          error?.error
+            ?.description ||
           error?.message ||
           'Unable to create payment order',
       });
@@ -351,7 +725,8 @@ app.post(
       }
 
       if (
-        !process.env.RAZORPAY_KEY_SECRET
+        !process.env
+          .RAZORPAY_KEY_SECRET
       ) {
         return res.status(503).json({
           error:
@@ -359,18 +734,22 @@ app.post(
         });
       }
 
-      const expected = crypto
-        .createHmac(
-          'sha256',
-          process.env.RAZORPAY_KEY_SECRET
-        )
-        .update(
-          `${razorpay_order_id}|${razorpay_payment_id}`
-        )
-        .digest('hex');
+      const expected =
+        crypto
+          .createHmac(
+            'sha256',
+            process.env
+              .RAZORPAY_KEY_SECRET
+          )
+          .update(
+            `${razorpay_order_id}|${razorpay_payment_id}`
+          )
+          .digest('hex');
 
       const expectedBuffer =
-        Buffer.from(expected);
+        Buffer.from(
+          expected
+        );
 
       const signatureBuffer =
         Buffer.from(
@@ -394,56 +773,66 @@ app.post(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .insert({
-          user_id: req.user.id,
+      } =
+        await db
+          .from('orders')
+          .insert({
+            user_id:
+              req.user.id,
 
-          order_number:
-            orderNumber(),
+            order_number:
+              orderNumber(),
 
-          items:
-            order.items,
+            items:
+              order.items,
 
-          subtotal:
-            order.subtotal,
+            subtotal:
+              order.subtotal,
 
-          discount:
-            order.discount || 0,
+            discount:
+              order.discount ||
+              0,
 
-          delivery_charge:
-            order.delivery_charge || 0,
+            delivery_charge:
+              order.delivery_charge ||
+              0,
 
-          total:
-            order.total,
+            total:
+              order.total,
 
-          address:
-            order.address,
+            address:
+              order.address,
 
-          payment_method:
-            'razorpay',
+            payment_method:
+              'razorpay',
 
-          payment_status:
-            'paid',
+            payment_status:
+              'paid',
 
-          order_status:
-            'confirmed',
+            order_status:
+              'confirmed',
 
-          razorpay_order_id,
+            razorpay_order_id,
 
-          razorpay_payment_id,
+            razorpay_payment_id,
 
-          razorpay_signature,
-        })
-        .select()
-        .single();
+            razorpay_signature,
+          })
+          .select()
+          .single();
 
       if (error) {
         throw error;
       }
 
+      await sendNewOrderEmail(
+        data,
+        req.user.email
+      );
+
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -469,40 +858,48 @@ app.post(
   auth,
   async (req, res) => {
     try {
-      const orderData = req.body;
+      const orderData =
+        req.body;
 
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .insert({
-          ...orderData,
+      } =
+        await db
+          .from('orders')
+          .insert({
+            ...orderData,
 
-          user_id:
-            req.user.id,
+            user_id:
+              req.user.id,
 
-          order_number:
-            orderNumber(),
+            order_number:
+              orderNumber(),
 
-          payment_method:
-            'cod',
+            payment_method:
+              'cod',
 
-          payment_status:
-            'pending',
+            payment_status:
+              'pending',
 
-          order_status:
-            'pending',
-        })
-        .select()
-        .single();
+            order_status:
+              'pending',
+          })
+          .select()
+          .single();
 
       if (error) {
         throw error;
       }
 
+      await sendNewOrderEmail(
+        data,
+        req.user.email
+      );
+
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -531,19 +928,21 @@ app.get(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .select('*')
-        .eq(
-          'user_id',
-          req.user.id
-        )
-        .order(
-          'created_at',
-          {
-            ascending: false,
-          }
-        );
+      } =
+        await db
+          .from('orders')
+          .select('*')
+          .eq(
+            'user_id',
+            req.user.id
+          )
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          );
 
       if (error) {
         return res.status(500).json({
@@ -583,18 +982,19 @@ app.get(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .select('*')
-        .eq(
-          'id',
-          req.params.id
-        )
-        .eq(
-          'user_id',
-          req.user.id
-        )
-        .maybeSingle();
+      } =
+        await db
+          .from('orders')
+          .select('*')
+          .eq(
+            'id',
+            req.params.id
+          )
+          .eq(
+            'user_id',
+            req.user.id
+          )
+          .maybeSingle();
 
       if (error) {
         return res.status(500).json({
@@ -611,7 +1011,8 @@ app.get(
       }
 
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -641,20 +1042,23 @@ app.patch(
         req.params.id;
 
       const {
-        data: existingOrder,
-        error: fetchError,
-      } = await db
-        .from('orders')
-        .select('*')
-        .eq(
-          'id',
-          orderId
-        )
-        .eq(
-          'user_id',
-          req.user.id
-        )
-        .maybeSingle();
+        data:
+          existingOrder,
+        error:
+          fetchError,
+      } =
+        await db
+          .from('orders')
+          .select('*')
+          .eq(
+            'id',
+            orderId
+          )
+          .eq(
+            'user_id',
+            req.user.id
+          )
+          .maybeSingle();
 
       if (fetchError) {
         return res.status(500).json({
@@ -670,10 +1074,11 @@ app.patch(
         });
       }
 
-      const cancellableStatuses = [
-        'pending',
-        'confirmed',
-      ];
+      const cancellableStatuses =
+        [
+          'pending',
+          'confirmed',
+        ];
 
       if (
         !cancellableStatuses.includes(
@@ -689,22 +1094,23 @@ app.patch(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .update({
-          order_status:
-            'cancelled',
-        })
-        .eq(
-          'id',
-          orderId
-        )
-        .eq(
-          'user_id',
-          req.user.id
-        )
-        .select()
-        .single();
+      } =
+        await db
+          .from('orders')
+          .update({
+            order_status:
+              'cancelled',
+          })
+          .eq(
+            'id',
+            orderId
+          )
+          .eq(
+            'user_id',
+            req.user.id
+          )
+          .select()
+          .single();
 
       if (error) {
         return res.status(500).json({
@@ -714,7 +1120,8 @@ app.patch(
       }
 
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -755,22 +1162,25 @@ app.patch(
       }
 
       const {
-        data: existingOrder,
-        error: fetchError,
-      } = await db
-        .from('orders')
-        .select(
-          'id, order_status'
-        )
-        .eq(
-          'id',
-          orderId
-        )
-        .eq(
-          'user_id',
-          req.user.id
-        )
-        .maybeSingle();
+        data:
+          existingOrder,
+        error:
+          fetchError,
+      } =
+        await db
+          .from('orders')
+          .select(
+            'id, order_status'
+          )
+          .eq(
+            'id',
+            orderId
+          )
+          .eq(
+            'user_id',
+            req.user.id
+          )
+          .maybeSingle();
 
       if (fetchError) {
         return res.status(500).json({
@@ -786,10 +1196,11 @@ app.patch(
         });
       }
 
-      const editableStatuses = [
-        'pending',
-        'confirmed',
-      ];
+      const editableStatuses =
+        [
+          'pending',
+          'confirmed',
+        ];
 
       if (
         !editableStatuses.includes(
@@ -805,21 +1216,22 @@ app.patch(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .update({
-          address,
-        })
-        .eq(
-          'id',
-          orderId
-        )
-        .eq(
-          'user_id',
-          req.user.id
-        )
-        .select()
-        .single();
+      } =
+        await db
+          .from('orders')
+          .update({
+            address,
+          })
+          .eq(
+            'id',
+            orderId
+          )
+          .eq(
+            'user_id',
+            req.user.id
+          )
+          .select()
+          .single();
 
       if (error) {
         return res.status(500).json({
@@ -829,7 +1241,8 @@ app.patch(
       }
 
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -868,15 +1281,17 @@ app.get(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .select('*')
-        .order(
-          'created_at',
-          {
-            ascending: false,
-          }
-        );
+      } =
+        await db
+          .from('orders')
+          .select('*')
+          .order(
+            'created_at',
+            {
+              ascending:
+                false,
+            }
+          );
 
       if (error) {
         return res.status(500).json({
@@ -925,14 +1340,15 @@ app.get(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .select('*')
-        .eq(
-          'id',
-          orderId
-        )
-        .maybeSingle();
+      } =
+        await db
+          .from('orders')
+          .select('*')
+          .eq(
+            'id',
+            orderId
+          )
+          .maybeSingle();
 
       if (error) {
         return res.status(500).json({
@@ -949,7 +1365,8 @@ app.get(
       }
 
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -976,15 +1393,16 @@ app.patch(
   admin,
   async (req, res) => {
     try {
-      const allowedStatuses = [
-        'pending',
-        'confirmed',
-        'processing',
-        'shipped',
-        'out for delivery',
-        'delivered',
-        'cancelled',
-      ];
+      const allowedStatuses =
+        [
+          'pending',
+          'confirmed',
+          'processing',
+          'shipped',
+          'out for delivery',
+          'delivered',
+          'cancelled',
+        ];
 
       const status =
         req.body.status;
@@ -1006,8 +1424,10 @@ app.patch(
       };
 
       if (
-        status === 'delivered' &&
-        req.body.payment_status
+        status ===
+          'delivered' &&
+        req.body
+          .payment_status
       ) {
         patch.payment_status =
           req.body.payment_status;
@@ -1016,15 +1436,18 @@ app.patch(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .update(patch)
-        .eq(
-          'id',
-          req.params.id
-        )
-        .select()
-        .single();
+      } =
+        await db
+          .from('orders')
+          .update(
+            patch
+          )
+          .eq(
+            'id',
+            req.params.id
+          )
+          .select()
+          .single();
 
       if (error) {
         return res.status(500).json({
@@ -1034,7 +1457,8 @@ app.patch(
       }
 
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -1084,15 +1508,18 @@ app.patch(
       const {
         data,
         error,
-      } = await db
-        .from('orders')
-        .update(patch)
-        .eq(
-          'id',
-          req.params.id
-        )
-        .select()
-        .single();
+      } =
+        await db
+          .from('orders')
+          .update(
+            patch
+          )
+          .eq(
+            'id',
+            req.params.id
+          )
+          .select()
+          .single();
 
       if (error) {
         return res.status(500).json({
@@ -1102,7 +1529,8 @@ app.patch(
       }
 
       return res.json({
-        order: data,
+        order:
+          data,
       });
     } catch (error) {
       console.error(
@@ -1133,46 +1561,65 @@ app.get(
         ordersResult,
         productsResult,
         customersResult,
-      ] = await Promise.all([
-        db
-          .from('orders')
-          .select(
-            'total,order_status'
-          ),
+      ] =
+        await Promise.all([
+          db
+            .from('orders')
+            .select(
+              'total,order_status'
+            ),
 
-        db
-          .from('products')
-          .select('id', {
-            count: 'exact',
-            head: true,
-          }),
+          db
+            .from('products')
+            .select(
+              'id',
+              {
+                count:
+                  'exact',
+                head:
+                  true,
+              }
+            ),
 
-        db
-          .from('profiles')
-          .select('id', {
-            count: 'exact',
-            head: true,
-          })
-          .eq(
-            'role',
-            'customer'
-          ),
-      ]);
+          db
+            .from('profiles')
+            .select(
+              'id',
+              {
+                count:
+                  'exact',
+                head:
+                  true,
+              }
+            )
+            .eq(
+              'role',
+              'customer'
+            ),
+        ]);
 
       const {
         data: orders,
-        error: ordersError,
-      } = ordersResult;
+        error:
+          ordersError,
+      } =
+        ordersResult;
 
       const {
-        count: productCount,
-        error: productsError,
-      } = productsResult;
+        count:
+          productCount,
+        error:
+          productsError,
+      } =
+        productsResult;
 
       const {
-        count: customerCount,
-        error: customersError,
-      } = customersResult;
+        count:
+          customerCount,
+        error:
+          customersError,
+      } =
+        customersResult;
 
       if (
         ordersError ||
@@ -1207,7 +1654,8 @@ app.get(
             ) =>
               total +
               Number(
-                order.total || 0
+                order.total ||
+                  0
               ),
             0
           );
@@ -1244,10 +1692,12 @@ app.get(
         deliveredOrders,
 
         totalProducts:
-          productCount || 0,
+          productCount ||
+          0,
 
         totalCustomers:
-          customerCount || 0,
+          customerCount ||
+          0,
       });
     } catch (error) {
       console.error(

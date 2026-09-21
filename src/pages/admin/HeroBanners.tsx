@@ -1,4 +1,9 @@
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react';
 
 import {
   Plus,
@@ -29,6 +34,13 @@ import type {
 import { useToast } from '@/context/ToastContext';
 import Loader from '@/components/Loader';
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
 
 const emptyForm: HeroBannerInput = {
   title: '',
@@ -44,7 +56,6 @@ const emptyForm: HeroBannerInput = {
   sort_order: 0,
   is_active: true,
 };
-
 
 export default function HeroBanners() {
   const { showToast } = useToast();
@@ -81,7 +92,6 @@ export default function HeroBanners() {
   const [mobilePreview, setMobilePreview] =
     useState('');
 
-
   // =====================================================
   // LOAD
   // =====================================================
@@ -109,11 +119,69 @@ export default function HeroBanners() {
     }
   }
 
-
   useEffect(() => {
     loadBanners();
   }, []);
 
+  // =====================================================
+  // CLEANUP OBJECT URL
+  // =====================================================
+
+  useEffect(() => {
+    return () => {
+      if (
+        desktopPreview.startsWith(
+          'blob:'
+        )
+      ) {
+        URL.revokeObjectURL(
+          desktopPreview
+        );
+      }
+
+      if (
+        mobilePreview.startsWith(
+          'blob:'
+        )
+      ) {
+        URL.revokeObjectURL(
+          mobilePreview
+        );
+      }
+    };
+  }, [
+    desktopPreview,
+    mobilePreview,
+  ]);
+
+  // =====================================================
+  // RESET PREVIEW
+  // =====================================================
+
+  function clearPreviews() {
+    if (
+      desktopPreview.startsWith(
+        'blob:'
+      )
+    ) {
+      URL.revokeObjectURL(
+        desktopPreview
+      );
+    }
+
+    if (
+      mobilePreview.startsWith(
+        'blob:'
+      )
+    ) {
+      URL.revokeObjectURL(
+        mobilePreview
+      );
+    }
+
+    setDesktopPreview('');
+    setMobilePreview('');
+  }
 
   // =====================================================
   // OPEN ADD
@@ -131,12 +199,10 @@ export default function HeroBanners() {
     setDesktopFile(null);
     setMobileFile(null);
 
-    setDesktopPreview('');
-    setMobilePreview('');
+    clearPreviews();
 
     setShowForm(true);
   }
-
 
   // =====================================================
   // OPEN EDIT
@@ -190,9 +256,43 @@ export default function HeroBanners() {
     setShowForm(true);
   }
 
+  // =====================================================
+  // VALIDATE IMAGE
+  // =====================================================
+
+  function validateImage(
+    file: File
+  ) {
+    if (
+      !ALLOWED_IMAGE_TYPES.includes(
+        file.type
+      )
+    ) {
+      showToast(
+        'Only JPG, PNG or WebP images are allowed',
+        'error'
+      );
+
+      return false;
+    }
+
+    if (
+      file.size >
+      MAX_IMAGE_SIZE
+    ) {
+      showToast(
+        'Image must be smaller than 5MB',
+        'error'
+      );
+
+      return false;
+    }
+
+    return true;
+  }
 
   // =====================================================
-  // FILE CHANGE
+  // DESKTOP FILE
   // =====================================================
 
   function handleDesktopFile(
@@ -200,38 +300,70 @@ export default function HeroBanners() {
   ) {
     if (!file) return;
 
-    setDesktopFile(file);
+    if (!validateImage(file)) {
+      return;
+    }
 
-    setDesktopPreview(
-      URL.createObjectURL(file)
-    );
+    if (
+      desktopPreview.startsWith(
+        'blob:'
+      )
+    ) {
+      URL.revokeObjectURL(
+        desktopPreview
+      );
+    }
+
+    const preview =
+      URL.createObjectURL(file);
+
+    setDesktopFile(file);
+    setDesktopPreview(preview);
   }
 
+  // =====================================================
+  // MOBILE FILE
+  // =====================================================
 
   function handleMobileFile(
     file: File | undefined
   ) {
     if (!file) return;
 
+    if (!validateImage(file)) {
+      return;
+    }
+
+    if (
+      mobilePreview.startsWith(
+        'blob:'
+      )
+    ) {
+      URL.revokeObjectURL(
+        mobilePreview
+      );
+    }
+
+    const preview =
+      URL.createObjectURL(file);
+
     setMobileFile(file);
-
-    setMobilePreview(
-      URL.createObjectURL(file)
-    );
+    setMobilePreview(preview);
   }
-
 
   // =====================================================
   // SAVE
   // =====================================================
 
   async function handleSubmit(
-    event: React.FormEvent
+    event: FormEvent
   ) {
     event.preventDefault();
 
-    if (!desktopFile &&
-        !form.desktop_image_url) {
+    if (
+      !desktopFile &&
+      !form.desktop_image_url
+    ) {
       showToast(
         'Desktop image is required',
         'error'
@@ -249,7 +381,6 @@ export default function HeroBanners() {
       let mobileUrl =
         form.mobile_image_url || null;
 
-
       // ===============================================
       // DESKTOP UPLOAD
       // ===============================================
@@ -262,7 +393,6 @@ export default function HeroBanners() {
           );
       }
 
-
       // ===============================================
       // MOBILE UPLOAD
       // ===============================================
@@ -274,7 +404,6 @@ export default function HeroBanners() {
             'mobile'
           );
       }
-
 
       const data: Omit<
         HeroBanner,
@@ -310,7 +439,6 @@ export default function HeroBanners() {
           form.is_active ?? true,
       };
 
-
       // ===============================================
       // UPDATE
       // ===============================================
@@ -333,7 +461,6 @@ export default function HeroBanners() {
           );
         }
 
-
         // Delete replaced mobile image
         if (
           mobileFile &&
@@ -352,7 +479,6 @@ export default function HeroBanners() {
         );
       }
 
-
       // ===============================================
       // CREATE
       // ===============================================
@@ -366,15 +492,13 @@ export default function HeroBanners() {
         );
       }
 
-
       setShowForm(false);
       setEditing(null);
 
       setDesktopFile(null);
       setMobileFile(null);
 
-      setDesktopPreview('');
-      setMobilePreview('');
+      clearPreviews();
 
       await loadBanners();
 
@@ -393,7 +517,6 @@ export default function HeroBanners() {
       setSaving(false);
     }
   }
-
 
   // =====================================================
   // DELETE
@@ -418,9 +541,13 @@ export default function HeroBanners() {
         banner.desktop_image_url
       );
 
-      await deleteHeroBannerImage(
+      if (
         banner.mobile_image_url
-      );
+      ) {
+        await deleteHeroBannerImage(
+          banner.mobile_image_url
+        );
+      }
 
       setBanners((prev) =>
         prev.filter(
@@ -446,7 +573,6 @@ export default function HeroBanners() {
       );
     }
   }
-
 
   // =====================================================
   // TOGGLE ACTIVE
@@ -493,6 +619,21 @@ export default function HeroBanners() {
     }
   }
 
+  // =====================================================
+  // CLOSE FORM
+  // =====================================================
+
+  function closeForm() {
+    if (saving) return;
+
+    setShowForm(false);
+    setEditing(null);
+
+    setDesktopFile(null);
+    setMobileFile(null);
+
+    clearPreviews();
+  }
 
   // =====================================================
   // LOADING
@@ -506,7 +647,6 @@ export default function HeroBanners() {
     );
   }
 
-
   // =====================================================
   // PAGE
   // =====================================================
@@ -516,43 +656,49 @@ export default function HeroBanners() {
 
       {/* HEADER */}
 
-      <div className="
-        flex
-        flex-col
-        sm:flex-row
-        sm:items-center
-        sm:justify-between
-        gap-4
-      ">
-
+      <div
+        className="
+          flex
+          flex-col
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          gap-4
+        "
+      >
         <div>
-          <h1 className="
-            font-heading
-            text-2xl
-            sm:text-3xl
-            text-ink
-          ">
+          <h1
+            className="
+              font-heading
+              text-2xl
+              sm:text-3xl
+              text-ink
+            "
+          >
             Hero Banners
           </h1>
 
-          <p className="
-            text-sm
-            text-ink-soft
-            mt-1
-          ">
+          <p
+            className="
+              text-sm
+              text-ink-soft
+              mt-1
+            "
+          >
             Manage homepage promotional banners
           </p>
         </div>
 
-
-        <div className="
-          flex
-          gap-2
-        ">
-
+        <div
+          className="
+            flex
+            gap-2
+          "
+        >
           <button
             type="button"
             onClick={loadBanners}
+            disabled={loading}
             className="
               px-4
               py-2.5
@@ -571,6 +717,62 @@ export default function HeroBanners() {
             Refresh
           </button>
 
+          <button
+            type="button"
+            onClick={openAdd}
+            className="
+              btn-primary
+              inline-flex
+              items-center
+              gap-2
+            "
+          >
+            <Plus className="w-4 h-4" />
+            Add Banner
+          </button>
+        </div>
+      </div>
+
+      {/* EMPTY */}
+
+      {banners.length === 0 && (
+        <div
+          className="
+            card
+            p-10
+            text-center
+          "
+        >
+          <ImageIcon
+            className="
+              w-12
+              h-12
+              mx-auto
+              text-ink/20
+              mb-4
+            "
+          />
+
+          <h2
+            className="
+              font-heading
+              text-xl
+              text-ink
+            "
+          >
+            No Hero Banners
+          </h2>
+
+          <p
+            className="
+              text-sm
+              text-ink-soft
+              mt-2
+              mb-5
+            "
+          >
+            Add your first homepage banner.
+          </p>
 
           <button
             type="button"
@@ -585,68 +787,14 @@ export default function HeroBanners() {
             <Plus className="w-4 h-4" />
             Add Banner
           </button>
-
-        </div>
-
-      </div>
-
-
-      {/* EMPTY */}
-
-      {banners.length === 0 && (
-        <div className="
-          card
-          p-10
-          text-center
-        ">
-
-          <ImageIcon className="
-            w-12
-            h-12
-            mx-auto
-            text-ink/20
-            mb-4
-          " />
-
-          <h2 className="
-            font-heading
-            text-xl
-            text-ink
-          ">
-            No Hero Banners
-          </h2>
-
-          <p className="
-            text-sm
-            text-ink-soft
-            mt-2
-            mb-5
-          ">
-            Add your first homepage banner.
-          </p>
-
-          <button
-            type="button"
-            onClick={openAdd}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            Add Banner
-          </button>
-
         </div>
       )}
 
-
       {/* BANNERS */}
 
-      <div className="
-        grid
-        gap-5
-      ">
+      <div className="grid gap-5">
 
         {banners.map((banner) => (
-
           <div
             key={banner.id}
             className="
@@ -654,25 +802,27 @@ export default function HeroBanners() {
               overflow-hidden
             "
           >
-
-            <div className="
-              grid
-              lg:grid-cols-[280px_1fr_auto]
-              gap-5
-              p-4
-              sm:p-5
-            ">
+            <div
+              className="
+                grid
+                lg:grid-cols-[280px_1fr_auto]
+                gap-5
+                p-4
+                sm:p-5
+              "
+            >
 
               {/* IMAGE */}
 
-              <div className="
-                aspect-[16/8]
-                lg:aspect-[16/9]
-                rounded-xl
-                overflow-hidden
-                bg-bg-warm
-              ">
-
+              <div
+                className="
+                  aspect-[16/8]
+                  lg:aspect-[16/9]
+                  rounded-xl
+                  overflow-hidden
+                  bg-bg-warm
+                "
+              >
                 <img
                   src={
                     banner.desktop_image_url
@@ -681,93 +831,101 @@ export default function HeroBanners() {
                     banner.title ||
                     'Hero banner'
                   }
+                  loading="lazy"
+                  decoding="async"
                   className="
                     w-full
                     h-full
                     object-cover
                   "
                 />
-
               </div>
-
 
               {/* INFO */}
 
-              <div className="
-                min-w-0
-                flex
-                flex-col
-                justify-center
-              ">
-
-                <div className="
+              <div
+                className="
+                  min-w-0
                   flex
-                  items-center
-                  gap-2
-                  flex-wrap
-                ">
-
-                  <h2 className="
-                    font-heading
-                    text-xl
-                    text-ink
-                  ">
+                  flex-col
+                  justify-center
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                    flex-wrap
+                  "
+                >
+                  <h2
+                    className="
+                      font-heading
+                      text-xl
+                      text-ink
+                    "
+                  >
                     {banner.title ||
                       'Untitled Banner'}
                   </h2>
 
-                  <span className={`
-                    px-2.5
-                    py-1
-                    rounded-full
-                    text-xs
-                    font-medium
-                    ${
-                      banner.is_active
-                        ? 'bg-palm/10 text-palm'
-                        : 'bg-ink/5 text-ink-soft'
-                    }
-                  `}>
+                  <span
+                    className={`
+                      px-2.5
+                      py-1
+                      rounded-full
+                      text-xs
+                      font-medium
+                      ${
+                        banner.is_active
+                          ? 'bg-palm/10 text-palm'
+                          : 'bg-ink/5 text-ink-soft'
+                      }
+                    `}
+                  >
                     {banner.is_active
                       ? 'Active'
                       : 'Inactive'}
                   </span>
-
                 </div>
 
-
                 {banner.offer_text && (
-                  <p className="
-                    text-sm
-                    text-gold
-                    font-medium
-                    mt-1
-                  ">
+                  <p
+                    className="
+                      text-sm
+                      text-gold
+                      font-medium
+                      mt-1
+                    "
+                  >
                     {banner.offer_text}
                   </p>
                 )}
 
-
                 {banner.subtitle && (
-                  <p className="
-                    text-sm
-                    text-ink-soft
-                    mt-2
-                    line-clamp-2
-                  ">
+                  <p
+                    className="
+                      text-sm
+                      text-ink-soft
+                      mt-2
+                      line-clamp-2
+                    "
+                  >
                     {banner.subtitle}
                   </p>
                 )}
 
-
-                <div className="
-                  flex
-                  items-center
-                  gap-3
-                  mt-3
-                  text-xs
-                  text-ink-soft
-                ">
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    mt-3
+                    text-xs
+                    text-ink-soft
+                  "
+                >
                   <span>
                     Order: {banner.sort_order}
                   </span>
@@ -776,20 +934,19 @@ export default function HeroBanners() {
                     Button: {banner.button_text}
                   </span>
                 </div>
-
               </div>
-
 
               {/* ACTIONS */}
 
-              <div className="
-                flex
-                lg:flex-col
-                items-center
-                lg:items-stretch
-                gap-2
-              ">
-
+              <div
+                className="
+                  flex
+                  lg:flex-col
+                  items-center
+                  lg:items-stretch
+                  gap-2
+                "
+              >
                 <button
                   type="button"
                   onClick={() =>
@@ -816,7 +973,6 @@ export default function HeroBanners() {
                   )}
                 </button>
 
-
                 <button
                   type="button"
                   onClick={() =>
@@ -834,7 +990,6 @@ export default function HeroBanners() {
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
-
 
                 <button
                   type="button"
@@ -854,116 +1009,120 @@ export default function HeroBanners() {
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-
               </div>
-
             </div>
-
           </div>
-
         ))}
-
       </div>
-
 
       {/* =================================================
           FORM MODAL
       ================================================= */}
 
       {showForm && (
-        <div className="
-          fixed
-          inset-0
-          z-50
-          bg-black/50
-          backdrop-blur-sm
-          p-4
-          overflow-y-auto
-        ">
-
-          <div className="
-            min-h-full
-            flex
-            items-center
-            justify-center
-          ">
-
-            <div className="
-              w-full
-              max-w-4xl
-              bg-card
-              rounded-2xl
-              shadow-2xl
-              overflow-hidden
-            ">
+        <div
+          className="
+            fixed
+            inset-0
+            z-50
+            bg-black/50
+            backdrop-blur-sm
+            p-4
+            overflow-y-auto
+          "
+        >
+          <div
+            className="
+              min-h-full
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <div
+              className="
+                w-full
+                max-w-4xl
+                bg-card
+                rounded-2xl
+                shadow-2xl
+                overflow-hidden
+              "
+            >
 
               {/* MODAL HEADER */}
 
-              <div className="
-                flex
-                items-center
-                justify-between
-                p-5
-                border-b
-                border-line
-              ">
-
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  p-5
+                  border-b
+                  border-line
+                "
+              >
                 <div>
-                  <h2 className="
-                    font-heading
-                    text-xl
-                    sm:text-2xl
-                    text-ink
-                  ">
+                  <h2
+                    className="
+                      font-heading
+                      text-xl
+                      sm:text-2xl
+                      text-ink
+                    "
+                  >
                     {editing
                       ? 'Edit Hero Banner'
                       : 'Add Hero Banner'}
                   </h2>
 
-                  <p className="
-                    text-xs
-                    sm:text-sm
-                    text-ink-soft
-                    mt-1
-                  ">
+                  <p
+                    className="
+                      text-xs
+                      sm:text-sm
+                      text-ink-soft
+                      mt-1
+                    "
+                  >
                     Upload desktop and mobile
                     promotional images.
                   </p>
                 </div>
 
-
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowForm(false)
-                  }
+                  onClick={closeForm}
+                  disabled={saving}
                   className="
                     p-2
                     rounded-lg
                     hover:bg-ink/5
                   "
+                  aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
-
               </div>
-
 
               {/* FORM */}
 
               <form
                 onSubmit={handleSubmit}
-                className="p-5 space-y-5"
+                className="
+                  p-5
+                  space-y-5
+                "
               >
 
                 {/* TEXT */}
 
-                <div className="
-                  grid
-                  sm:grid-cols-2
-                  gap-4
-                ">
-
+                <div
+                  className="
+                    grid
+                    sm:grid-cols-2
+                    gap-4
+                  "
+                >
                   <div>
                     <label className="label">
                       Title
@@ -985,7 +1144,6 @@ export default function HeroBanners() {
                     />
                   </div>
 
-
                   <div>
                     <label className="label">
                       Offer Text
@@ -1006,9 +1164,7 @@ export default function HeroBanners() {
                       placeholder="20% OFF"
                     />
                   </div>
-
                 </div>
-
 
                 <div>
                   <label className="label">
@@ -1035,7 +1191,6 @@ export default function HeroBanners() {
                   />
                 </div>
 
-
                 {/* DESKTOP IMAGE */}
 
                 <div>
@@ -1043,28 +1198,32 @@ export default function HeroBanners() {
                     Desktop Banner
                   </label>
 
-                  <label className="
-                    block
-                    cursor-pointer
-                  ">
-
-                    <div className="
-                      aspect-[16/6]
-                      rounded-xl
-                      border-2
-                      border-dashed
-                      border-line
-                      overflow-hidden
-                      bg-bg-warm
-                      flex
-                      items-center
-                      justify-center
-                    ">
-
+                  <label
+                    className="
+                      block
+                      cursor-pointer
+                    "
+                  >
+                    <div
+                      className="
+                        aspect-[16/6]
+                        rounded-xl
+                        border-2
+                        border-dashed
+                        border-line
+                        overflow-hidden
+                        bg-bg-warm
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
                       {desktopPreview ? (
                         <img
                           src={desktopPreview}
-                          alt="Desktop preview"
+                          alt="Desktop banner preview"
+                          loading="lazy"
+                          decoding="async"
                           className="
                             w-full
                             h-full
@@ -1072,86 +1231,108 @@ export default function HeroBanners() {
                           "
                         />
                       ) : (
-                        <div className="
-                          text-center
-                          text-ink-soft
-                        ">
-                          <Upload className="
-                            w-8
-                            h-8
-                            mx-auto
-                            mb-2
-                          " />
+                        <div
+                          className="
+                            text-center
+                            text-ink-soft
+                          "
+                        >
+                          <Upload
+                            className="
+                              w-8
+                              h-8
+                              mx-auto
+                              mb-2
+                            "
+                          />
 
                           <p className="text-sm">
                             Click to upload
                           </p>
 
-                          <p className="
-                            text-xs
-                            mt-1
-                          ">
+                          <p
+                            className="
+                              text-xs
+                              mt-1
+                            "
+                          >
                             Recommended 1920 × 700
                           </p>
                         </div>
                       )}
-
                     </div>
 
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
-                      onChange={(e) =>
+                      onChange={(
+                        e: ChangeEvent<HTMLInputElement>
+                      ) =>
                         handleDesktopFile(
                           e.target.files?.[0]
                         )
                       }
                     />
-
                   </label>
-                </div>
 
+                  <p
+                    className="
+                      text-[11px]
+                      text-ink-soft
+                      mt-1.5
+                    "
+                  >
+                    JPG, PNG or WebP • Max 5MB
+                  </p>
+                </div>
 
                 {/* MOBILE IMAGE */}
 
                 <div>
                   <label className="label">
                     Mobile Banner
-                    <span className="
-                      text-xs
-                      text-ink-soft
-                      font-normal
-                      ml-1
-                    ">
+
+                    <span
+                      className="
+                        text-xs
+                        text-ink-soft
+                        font-normal
+                        ml-1
+                      "
+                    >
                       (Optional)
                     </span>
                   </label>
 
-                  <label className="
-                    block
-                    cursor-pointer
-                    max-w-md
-                  ">
-
-                    <div className="
-                      aspect-[4/5]
-                      sm:aspect-[4/3]
-                      rounded-xl
-                      border-2
-                      border-dashed
-                      border-line
-                      overflow-hidden
-                      bg-bg-warm
-                      flex
-                      items-center
-                      justify-center
-                    ">
-
+                  <label
+                    className="
+                      block
+                      cursor-pointer
+                      max-w-md
+                    "
+                  >
+                    <div
+                      className="
+                        aspect-[4/5]
+                        sm:aspect-[4/3]
+                        rounded-xl
+                        border-2
+                        border-dashed
+                        border-line
+                        overflow-hidden
+                        bg-bg-warm
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
                       {mobilePreview ? (
                         <img
                           src={mobilePreview}
-                          alt="Mobile preview"
+                          alt="Mobile banner preview"
+                          loading="lazy"
+                          decoding="async"
                           className="
                             w-full
                             h-full
@@ -1159,56 +1340,72 @@ export default function HeroBanners() {
                           "
                         />
                       ) : (
-                        <div className="
-                          text-center
-                          text-ink-soft
-                          p-5
-                        ">
-                          <Upload className="
-                            w-8
-                            h-8
-                            mx-auto
-                            mb-2
-                          " />
+                        <div
+                          className="
+                            text-center
+                            text-ink-soft
+                            p-5
+                          "
+                        >
+                          <Upload
+                            className="
+                              w-8
+                              h-8
+                              mx-auto
+                              mb-2
+                            "
+                          />
 
                           <p className="text-sm">
                             Click to upload
                           </p>
 
-                          <p className="
-                            text-xs
-                            mt-1
-                          ">
+                          <p
+                            className="
+                              text-xs
+                              mt-1
+                            "
+                          >
                             Recommended 900 × 1100
                           </p>
                         </div>
                       )}
-
                     </div>
 
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
-                      onChange={(e) =>
+                      onChange={(
+                        e: ChangeEvent<HTMLInputElement>
+                      ) =>
                         handleMobileFile(
                           e.target.files?.[0]
                         )
                       }
                     />
-
                   </label>
-                </div>
 
+                  <p
+                    className="
+                      text-[11px]
+                      text-ink-soft
+                      mt-1.5
+                    "
+                  >
+                    JPG, PNG or WebP • Max 5MB
+                  </p>
+                </div>
 
                 {/* BUTTON */}
 
-                <div className="
-                  grid
-                  sm:grid-cols-3
-                  gap-4
-                ">
-
+                <div
+                  className="
+                    grid
+                    sm:grid-cols-3
+                    gap-4
+                  "
+                >
                   <div>
                     <label className="label">
                       Button Text
@@ -1231,7 +1428,6 @@ export default function HeroBanners() {
                     />
                   </div>
 
-
                   <div>
                     <label className="label">
                       Button Link
@@ -1253,7 +1449,6 @@ export default function HeroBanners() {
                       placeholder="/shop"
                     />
                   </div>
-
 
                   <div>
                     <label className="label">
@@ -1278,22 +1473,21 @@ export default function HeroBanners() {
                       className="input"
                     />
                   </div>
-
                 </div>
-
 
                 {/* ACTIVE */}
 
-                <label className="
-                  flex
-                  items-center
-                  gap-3
-                  cursor-pointer
-                  p-4
-                  rounded-xl
-                  bg-bg-warm
-                ">
-
+                <label
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    cursor-pointer
+                    p-4
+                    rounded-xl
+                    bg-bg-warm
+                  "
+                >
                   <input
                     type="checkbox"
                     checked={
@@ -1314,41 +1508,43 @@ export default function HeroBanners() {
                   />
 
                   <div>
-                    <p className="
-                      text-sm
-                      font-medium
-                      text-ink
-                    ">
+                    <p
+                      className="
+                        text-sm
+                        font-medium
+                        text-ink
+                      "
+                    >
                       Active Banner
                     </p>
 
-                    <p className="
-                      text-xs
-                      text-ink-soft
-                    ">
+                    <p
+                      className="
+                        text-xs
+                        text-ink-soft
+                      "
+                    >
                       Show this banner on homepage
                     </p>
                   </div>
-
                 </label>
-
 
                 {/* ACTIONS */}
 
-                <div className="
-                  flex
-                  justify-end
-                  gap-3
-                  pt-2
-                  border-t
-                  border-line
-                ">
-
+                <div
+                  className="
+                    flex
+                    justify-end
+                    gap-3
+                    pt-2
+                    border-t
+                    border-line
+                  "
+                >
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowForm(false)
-                    }
+                    onClick={closeForm}
+                    disabled={saving}
                     className="
                       px-5
                       py-2.5
@@ -1361,7 +1557,6 @@ export default function HeroBanners() {
                     Cancel
                   </button>
 
-
                   <button
                     type="submit"
                     disabled={saving}
@@ -1369,6 +1564,9 @@ export default function HeroBanners() {
                       btn-primary
                       min-w-[130px]
                       justify-center
+                      inline-flex
+                      items-center
+                      gap-2
                     "
                   >
                     {saving ? (
@@ -1376,24 +1574,19 @@ export default function HeroBanners() {
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
+
                         {editing
                           ? 'Update Banner'
                           : 'Save Banner'}
                       </>
                     )}
                   </button>
-
                 </div>
-
               </form>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

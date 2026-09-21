@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import thennaiManamLogo from '@/assets/tennai-manam-logo.png';
 
 import {
   ArrowLeft,
@@ -7,7 +8,6 @@ import {
   User,
   MapPin,
   Phone,
-  CreditCard,
   Printer,
 } from 'lucide-react';
 
@@ -28,9 +28,13 @@ export default function AdminOrderDetails() {
   const [error, setError] = useState('');
 
   const [courierName, setCourierName] = useState('');
-const [trackingId, setTrackingId] = useState('');
-const [trackingUrl, setTrackingUrl] = useState('');
-const [savingTracking, setSavingTracking] = useState(false);
+  const [trackingId, setTrackingId] = useState('');
+  const [trackingUrl, setTrackingUrl] = useState('');
+  const [savingTracking, setSavingTracking] = useState(false);
+
+  // ==========================================
+  // LOAD ORDER
+  // ==========================================
 
   async function loadOrder() {
     try {
@@ -50,13 +54,17 @@ const [savingTracking, setSavingTracking] = useState(false);
       setOrder(data);
 
       setCourierName(data.courier_name || '');
-setTrackingId(data.tracking_id || '');
-setTrackingUrl(data.tracking_url || '');
+      setTrackingId(data.tracking_id || '');
+      setTrackingUrl(data.tracking_url || '');
     } catch (err: any) {
-      console.error('Admin order details error:', err);
+      console.error(
+        'Admin order details error:',
+        err
+      );
 
       setError(
-        err?.message || 'Unable to load order'
+        err?.message ||
+          'Unable to load order'
       );
     } finally {
       setLoading(false);
@@ -67,7 +75,13 @@ setTrackingUrl(data.tracking_url || '');
     loadOrder();
   }, [id]);
 
-  async function handleStatusChange(status: string) {
+  // ==========================================
+  // UPDATE STATUS
+  // ==========================================
+
+  async function handleStatusChange(
+    status: string
+  ) {
     if (!order) return;
 
     try {
@@ -93,48 +107,76 @@ setTrackingUrl(data.tracking_url || '');
     }
   }
 
+  // ==========================================
+  // SAVE TRACKING
+  // ==========================================
+
   async function handleTrackingSave() {
-  if (!order) return;
+    if (!order) return;
 
-  try {
-    setSavingTracking(true);
+    try {
+      setSavingTracking(true);
 
-    const updatedOrder = await updateOrderTracking(
-      order.id,
-      {
-        courier_name: courierName.trim(),
-        tracking_id: trackingId.trim(),
-        tracking_url: trackingUrl.trim(),
-      }
-    );
+      const updatedOrder =
+        await updateOrderTracking(
+          order.id,
+          {
+            courier_name:
+              courierName.trim(),
 
-    setOrder(updatedOrder);
+            tracking_id:
+              trackingId.trim(),
 
-    alert('Tracking details saved successfully');
-  } catch (err: any) {
-    console.error(
-      'Tracking update error:',
-      err
-    );
+            tracking_url:
+              trackingUrl.trim(),
+          }
+        );
 
-    alert(
-      err?.message ||
-        'Unable to save tracking details'
-    );
-  } finally {
-    setSavingTracking(false);
+      setOrder(updatedOrder);
+
+      alert(
+        'Tracking details saved successfully'
+      );
+    } catch (err: any) {
+      console.error(
+        'Tracking update error:',
+        err
+      );
+
+      alert(
+        err?.message ||
+          'Unable to save tracking details'
+      );
+    } finally {
+      setSavingTracking(false);
+    }
   }
-}
 
-  function money(value: number | null | undefined) {
+  // ==========================================
+  // MONEY
+  // ==========================================
+
+  function money(
+    value: number | string | null | undefined
+  ) {
     const amount = Number(value || 0);
 
-    return `INR ${amount.toLocaleString('en-IN')}`;
+    return `₹${amount.toLocaleString(
+      'en-IN'
+    )}`;
   }
+
+  // ==========================================
+  // PRINT
+  // ==========================================
 
   function printBill() {
     window.print();
   }
+
+  // ==========================================
+  // LOADING
+  // ==========================================
 
   if (loading) {
     return (
@@ -146,11 +188,14 @@ setTrackingUrl(data.tracking_url || '');
     );
   }
 
+  // ==========================================
+  // ERROR
+  // ==========================================
+
   if (error || !order) {
     return (
       <div className="p-8">
         <div className="card p-6">
-
           <h2 className="text-xl font-semibold text-red-600">
             Unable to load order
           </h2>
@@ -167,7 +212,6 @@ setTrackingUrl(data.tracking_url || '');
           >
             Back to Orders
           </button>
-
         </div>
       </div>
     );
@@ -177,10 +221,15 @@ setTrackingUrl(data.tracking_url || '');
     order.order_number ||
     `#${order.id.slice(0, 8)}`;
 
+  const paymentMethod =
+    order.payment_method || '-';
+
   return (
     <div className="space-y-6">
 
-      {/* HEADER */}
+      {/* ==================================================
+          ADMIN HEADER
+      ================================================== */}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
 
@@ -208,20 +257,24 @@ setTrackingUrl(data.tracking_url || '');
         </div>
 
         <button
+          type="button"
           onClick={printBill}
           className="px-4 py-2 rounded-lg bg-palm text-white flex items-center gap-2"
         >
           <Printer className="w-4 h-4" />
+
           Generate / Print Bill
         </button>
 
       </div>
 
-      {/* INVOICE */}
+      {/* ==================================================
+          SCREEN INVOICE
+      ================================================== */}
 
       <div
         id="invoice"
-        className="card bg-white p-6 sm:p-8 space-y-8"
+        className="card bg-white p-6 sm:p-8 space-y-8 print:hidden"
       >
 
         {/* COMPANY HEADER */}
@@ -230,7 +283,7 @@ setTrackingUrl(data.tracking_url || '');
 
           <div>
             <h2 className="font-heading text-2xl text-ink">
-              Pollachi Coconut Oil
+              Thennai Manam
             </h2>
 
             <p className="text-ink-soft mt-1">
@@ -323,7 +376,8 @@ setTrackingUrl(data.tracking_url || '');
 
               <br />
 
-              PIN: {order.address?.pincode || '-'}
+              PIN:{' '}
+              {order.address?.pincode || '-'}
 
             </p>
 
@@ -425,8 +479,8 @@ setTrackingUrl(data.tracking_url || '');
 
                       <td className="py-4 text-right font-medium">
                         {money(
-                          item.price *
-                          item.quantity
+                          Number(item.price) *
+                          Number(item.quantity)
                         )}
                       </td>
 
@@ -511,45 +565,27 @@ setTrackingUrl(data.tracking_url || '');
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-          {/* PAYMENT */}
+          {/* PAYMENT METHOD */}
 
           <div className="border border-line rounded-xl p-5">
 
-            <div className="flex items-center gap-2 mb-4">
+            <h3 className="font-semibold mb-3">
+              Payment
+            </h3>
 
-              <CreditCard className="w-5 h-5 text-palm" />
-
-              <h3 className="font-semibold">
-                Payment
-              </h3>
-
-            </div>
-
-            <p className="text-sm">
-
-              Method:{' '}
-
-              <span className="font-medium capitalize">
-                {order.payment_method || '-'}
-              </span>
-
+            <p className="text-sm text-ink-soft">
+              Method
             </p>
 
-            <p className="text-sm mt-2">
-
-              Payment Status:{' '}
-
-              <span className="font-medium capitalize">
-                {order.payment_status || '-'}
-              </span>
-
+            <p className="font-medium capitalize mt-1">
+              {paymentMethod}
             </p>
 
           </div>
 
           {/* STATUS */}
 
-          <div className="border border-line rounded-xl p-5 print:hidden">
+          <div className="border border-line rounded-xl p-5">
 
             <h3 className="font-semibold mb-3">
               Order Status
@@ -602,196 +638,992 @@ setTrackingUrl(data.tracking_url || '');
 
         </div>
 
-{/* COURIER TRACKING */}
+        {/* ==================================================
+            COURIER TRACKING
+        ================================================== */}
 
-<div className="border border-line rounded-xl p-5 print:hidden">
+        <div className="border border-line rounded-xl p-5">
 
-  <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center gap-2 mb-5">
 
-    <Package className="w-5 h-5 text-palm" />
+            <Package className="w-5 h-5 text-palm" />
 
-    <div>
-      <h3 className="font-semibold text-lg">
-        Courier Tracking
-      </h3>
+            <div>
 
-      <p className="text-sm text-ink-soft mt-1">
-        Add courier and official tracking details
-      </p>
-    </div>
+              <h3 className="font-semibold text-lg">
+                Courier Tracking
+              </h3>
 
-  </div>
+              <p className="text-sm text-ink-soft mt-1">
+                Add courier and official tracking details
+              </p>
 
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            </div>
 
-    {/* COURIER */}
+          </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">
-        Courier Name
-      </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-      <input
-        type="text"
-        value={courierName}
-        onChange={(e) =>
-          setCourierName(e.target.value)
-        }
-        placeholder="Example: DTDC"
-        className="w-full px-3 py-2.5 rounded-lg border border-line bg-white"
-      />
-    </div>
+            {/* COURIER */}
 
-    {/* TRACKING ID */}
+            <div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">
-        Tracking ID
-      </label>
+              <label className="block text-sm font-medium mb-2">
+                Courier Name
+              </label>
 
-      <input
-        type="text"
-        value={trackingId}
-        onChange={(e) =>
-          setTrackingId(e.target.value)
-        }
-        placeholder="Example: D123456789"
-        className="w-full px-3 py-2.5 rounded-lg border border-line bg-white"
-      />
-    </div>
+              <input
+                type="text"
+                value={courierName}
+                onChange={(e) =>
+                  setCourierName(
+                    e.target.value
+                  )
+                }
+                placeholder="Example: DTDC"
+                className="w-full px-3 py-2.5 rounded-lg border border-line bg-white"
+              />
 
-    {/* TRACKING URL */}
+            </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">
-        Official Tracking URL
-      </label>
+            {/* TRACKING ID */}
 
-      <input
-        type="url"
-        value={trackingUrl}
-        onChange={(e) =>
-          setTrackingUrl(e.target.value)
-        }
-        placeholder="https://..."
-        className="w-full px-3 py-2.5 rounded-lg border border-line bg-white"
-      />
-    </div>
+            <div>
 
-  </div>
+              <label className="block text-sm font-medium mb-2">
+                Tracking ID
+              </label>
 
-  <div className="flex justify-end mt-5">
+              <input
+                type="text"
+                value={trackingId}
+                onChange={(e) =>
+                  setTrackingId(
+                    e.target.value
+                  )
+                }
+                placeholder="Example: D123456789"
+                className="w-full px-3 py-2.5 rounded-lg border border-line bg-white"
+              />
 
-    <button
-      type="button"
-      onClick={handleTrackingSave}
-      disabled={savingTracking}
-      className="px-5 py-2.5 rounded-lg bg-palm text-white font-medium disabled:opacity-60"
-    >
-      {savingTracking
-        ? 'Saving...'
-        : 'Save Tracking Details'}
-    </button>
+            </div>
 
-  </div>
+            {/* TRACKING URL */}
 
-</div>
+            <div>
+
+              <label className="block text-sm font-medium mb-2">
+                Official Tracking URL
+              </label>
+
+              <input
+                type="url"
+                value={trackingUrl}
+                onChange={(e) =>
+                  setTrackingUrl(
+                    e.target.value
+                  )
+                }
+                placeholder="https://..."
+                className="w-full px-3 py-2.5 rounded-lg border border-line bg-white"
+              />
+
+            </div>
+
+          </div>
+
+          <div className="flex justify-end mt-5">
+
+            <button
+              type="button"
+              onClick={handleTrackingSave}
+              disabled={savingTracking}
+              className="px-5 py-2.5 rounded-lg bg-palm text-white font-medium disabled:opacity-60"
+            >
+              {savingTracking
+                ? 'Saving...'
+                : 'Save Tracking Details'}
+            </button>
+
+          </div>
+
+        </div>
+
         {/* FOOTER */}
 
         <div className="border-t border-line pt-6 text-center text-sm text-ink-soft">
 
           <p>
             Thank you for shopping with
-            Pollachi Coconut Oil.
+            Thennai Manam.
           </p>
 
           <p className="mt-1">
-            This is a computer-generated invoice.
+            Pure - Natural - Traditional
           </p>
 
         </div>
 
       </div>
 
-     {/* PRINT CSS */}
+      {/* ==================================================
+          80MM THERMAL PRINT RECEIPT
 
-<style>
-  {`
-    @media print {
+          SCREEN:
+          Hidden
 
-      /* A4 Vertical */
-      @page {
-        size: A4 portrait;
-        margin: 12mm;
-      }
+          PRINT:
+          Only this section appears
+      ================================================== */}
 
-      html,
-      body {
-        width: 210mm !important;
-        min-height: 297mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-      }
+      <div
+        id="thermal-receipt"
+        className="thermal-receipt"
+      >
 
-      /* Hide everything */
-      body * {
-        visibility: hidden !important;
-      }
+        {/* HEADER */}
 
-      /* Show invoice only */
-      #invoice,
-      #invoice * {
-        visibility: visible !important;
-      }
+        <div className="receipt-header">
+  <img
+    src={thennaiManamLogo}
+    alt="Thennai Manam"
+    className="receipt-logo"
+  />
 
-      /* Put invoice at the top of the A4 page */
-      #invoice {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
+  <p>
+    Pure - Natural - Traditional
+  </p>
 
-        width: 100% !important;
-        min-height: 0 !important;
+  <p>
+    Coconut Oil & Natural Products
+  </p>
+</div>
 
-        margin: 0 !important;
-        padding: 0 !important;
+        <div className="receipt-line" />
 
-        background: white !important;
+        {/* ORDER INFO */}
 
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-      }
+        <div className="receipt-order">
 
-      /* Prevent unnecessary page breaks */
-      #invoice,
-      #invoice > div {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
+          <div>
 
-      table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-      }
+            <span>
+              ORDER
+            </span>
 
-      tr {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
+            <strong>
+              {orderNumber}
+            </strong>
 
-      img {
-        max-width: 100% !important;
-      }
+          </div>
 
-      /* Hide elements specifically marked print:hidden */
-      .print\\:hidden {
-        display: none !important;
-      }
-    }
-  `}
-</style>
+          <div>
+
+            <span>
+              DATE
+            </span>
+
+            <strong>
+              {new Date(
+                order.created_at
+              ).toLocaleDateString(
+                'en-IN'
+              )}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div className="receipt-order receipt-order-time">
+
+          <div>
+
+            <span>
+              TIME
+            </span>
+
+            <strong>
+              {new Date(
+                order.created_at
+              ).toLocaleTimeString(
+                'en-IN',
+                {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }
+              )}
+            </strong>
+
+          </div>
+
+          <div>
+
+            <span>
+              STATUS
+            </span>
+
+            <strong className="capitalize">
+              {order.order_status ||
+                'pending'}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div className="receipt-line" />
+
+        {/* CUSTOMER */}
+
+        <div className="receipt-section">
+
+          <strong>
+            CUSTOMER
+          </strong>
+
+          <p>
+            {order.address?.fullName ||
+              '-'}
+          </p>
+
+          <p>
+            {order.address?.phone ||
+              '-'}
+          </p>
+
+        </div>
+
+        {/* DELIVERY ADDRESS */}
+
+        <div className="receipt-section">
+
+          <strong>
+            DELIVERY ADDRESS
+          </strong>
+
+          <p>
+            {order.address?.line1 ||
+              '-'}
+          </p>
+
+          {order.address?.line2 && (
+            <p>
+              {order.address.line2}
+            </p>
+          )}
+
+          <p>
+            {order.address?.city ||
+              '-'}
+            ,{' '}
+            {order.address?.state ||
+              '-'}
+          </p>
+
+          <p>
+            PIN:{' '}
+            {order.address?.pincode ||
+              '-'}
+          </p>
+
+        </div>
+
+        <div className="receipt-line" />
+
+        {/* ITEMS */}
+
+        <div className="receipt-section">
+
+          <strong>
+            ORDERED ITEMS
+          </strong>
+
+          {order.items?.map(
+            (item, index) => {
+
+              const itemTotal =
+                Number(item.price) *
+                Number(item.quantity);
+
+              return (
+                <div
+                  key={`${item.product_id}-${index}`}
+                  className="receipt-item"
+                >
+
+                  <div className="receipt-item-name">
+
+                    <span>
+                      {item.name}
+                    </span>
+
+                    {item.size && (
+                      <small>
+                        {item.size}
+                      </small>
+                    )}
+
+                  </div>
+
+                  <span className="receipt-qty">
+                    {item.quantity}
+                  </span>
+
+                  <strong>
+                    {money(itemTotal)}
+                  </strong>
+
+                </div>
+              );
+            }
+          )}
+
+        </div>
+
+        <div className="receipt-line" />
+
+        {/* SUMMARY */}
+
+        <div className="receipt-summary">
+
+          <div>
+
+            <span>
+              Subtotal
+            </span>
+
+            <span>
+              {money(order.subtotal)}
+            </span>
+
+          </div>
+
+          <div>
+
+            <span>
+              Discount
+            </span>
+
+            <span>
+              - {money(order.discount)}
+            </span>
+
+          </div>
+
+          <div>
+
+            <span>
+              Delivery
+            </span>
+
+            <span>
+              {Number(
+                order.delivery_charge ||
+                  0
+              ) === 0
+                ? 'FREE'
+                : money(
+                    order.delivery_charge
+                  )}
+            </span>
+
+          </div>
+
+          <div className="receipt-total">
+
+            <strong>
+              TOTAL
+            </strong>
+
+            <strong>
+              {money(order.total)}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div className="receipt-line" />
+
+        {/* PAYMENT */}
+
+        <div className="receipt-payment">
+
+          <strong>
+            PAYMENT
+          </strong>
+
+          <p>
+            Method:{' '}
+            <span className="capitalize">
+              {paymentMethod}
+            </span>
+          </p>
+
+        </div>
+
+        {/* COURIER */}
+
+        {(order.courier_name ||
+          order.tracking_id) && (
+          <>
+            <div className="receipt-line" />
+
+            <div className="receipt-payment">
+
+              <strong>
+                DELIVERY
+              </strong>
+
+              {order.courier_name && (
+                <p>
+                  Courier:{' '}
+                  {order.courier_name}
+                </p>
+              )}
+
+              {order.tracking_id && (
+                <p>
+                  Tracking:{' '}
+                  {order.tracking_id}
+                </p>
+              )}
+
+            </div>
+          </>
+        )}
+
+        <div className="receipt-line" />
+
+        {/* FOOTER */}
+
+        <div className="receipt-footer">
+
+          <strong>
+            Thank You!
+          </strong>
+
+          <p>
+            Thank you for shopping with
+          </p>
+
+          <p>
+            Thennai Manam
+          </p>
+
+          <p className="receipt-small">
+            Pure by Nature 🌴
+          </p>
+
+        </div>
+
+      </div>
+
+      {/* ==================================================
+          PRINT CSS
+      ================================================== */}
+
+      <style>
+        {`
+
+          /* --------------------------------------------
+             NORMAL SCREEN
+          -------------------------------------------- */
+
+          .thermal-receipt {
+            display: none;
+          }
+
+
+          /* --------------------------------------------
+             PRINT
+          -------------------------------------------- */
+
+          @media print {
+
+            @page {
+              size: 80mm auto;
+              margin: 0;
+            }
+
+            html,
+            body {
+              width: 80mm !important;
+              min-width: 80mm !important;
+              max-width: 80mm !important;
+
+              margin: 0 !important;
+              padding: 0 !important;
+
+              background: #ffffff !important;
+            }
+
+
+            /* Hide EVERYTHING */
+
+            body * {
+              visibility: hidden !important;
+            }
+
+
+            /* Show ONLY receipt */
+
+            #thermal-receipt,
+            #thermal-receipt * {
+              visibility: visible !important;
+            }
+
+
+            /* Receipt container */
+
+            #thermal-receipt {
+              display: block !important;
+
+              position: absolute !important;
+
+              top: 0 !important;
+              left: 0 !important;
+
+              width: 80mm !important;
+              min-width: 80mm !important;
+              max-width: 80mm !important;
+
+              box-sizing: border-box !important;
+
+              margin: 0 !important;
+
+              padding: 4mm !important;
+
+              background: #ffffff !important;
+
+              color: #000000 !important;
+
+              font-family:
+                Arial,
+                Helvetica,
+                sans-serif !important;
+
+              font-size: 10px !important;
+
+              line-height: 1.35 !important;
+
+              overflow: visible !important;
+            }
+
+
+            #thermal-receipt *,
+            #thermal-receipt *::before,
+            #thermal-receipt *::after {
+              box-sizing: border-box !important;
+
+              color: #000000 !important;
+            }
+
+
+            /* --------------------------------------------
+               HEADER
+            -------------------------------------------- */
+
+            .receipt-header {
+              width: 100% !important;
+
+              text-align: center !important;
+
+              margin: 0 0 3mm 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-logo {
+  display: block !important;
+  width: 64mm !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto 2mm auto !important;
+  object-fit: contain !important;
+}
+            .receipt-header p {
+              margin: 1px 0 !important;
+
+              padding: 0 !important;
+
+              font-size: 9px !important;
+
+              line-height: 1.3 !important;
+            }
+
+
+            /* --------------------------------------------
+               DIVIDER
+            -------------------------------------------- */
+
+            .receipt-line {
+              width: 100% !important;
+
+              height: 0 !important;
+
+              border-top:
+                1px dashed #000000 !important;
+
+              margin:
+                3mm 0 !important;
+
+              padding: 0 !important;
+            }
+
+
+            /* --------------------------------------------
+               ORDER INFO
+            -------------------------------------------- */
+
+            .receipt-order {
+              width: 100% !important;
+
+              display: flex !important;
+
+              flex-direction: row !important;
+
+              justify-content:
+                space-between !important;
+
+              align-items: flex-start !important;
+
+              gap: 3mm !important;
+
+              margin: 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-order-time {
+              margin-top: 2mm !important;
+            }
+
+            .receipt-order > div {
+              display: flex !important;
+
+              flex-direction: column !important;
+
+              width: 50% !important;
+
+              min-width: 0 !important;
+            }
+
+            .receipt-order > div:last-child {
+              text-align: right !important;
+
+              align-items: flex-end !important;
+            }
+
+            .receipt-order span {
+              font-size: 8px !important;
+
+              line-height: 1.2 !important;
+
+              font-weight: 400 !important;
+            }
+
+            .receipt-order strong {
+              font-size: 10px !important;
+
+              line-height: 1.3 !important;
+
+              font-weight: 700 !important;
+
+              overflow-wrap:
+                anywhere !important;
+            }
+
+
+            /* --------------------------------------------
+               SECTIONS
+            -------------------------------------------- */
+
+            .receipt-section {
+              width: 100% !important;
+
+              margin:
+                3mm 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-section > strong {
+              display: block !important;
+
+              margin:
+                0 0 1.5mm 0 !important;
+
+              padding: 0 !important;
+
+              font-size: 9px !important;
+
+              line-height: 1.2 !important;
+
+              font-weight: 700 !important;
+            }
+
+            .receipt-section p {
+              margin:
+                0 0 0.7mm 0 !important;
+
+              padding: 0 !important;
+
+              font-size: 9.5px !important;
+
+              line-height: 1.35 !important;
+
+              overflow-wrap:
+                anywhere !important;
+            }
+
+
+            /* --------------------------------------------
+               ITEMS
+            -------------------------------------------- */
+
+            .receipt-item {
+              width: 100% !important;
+
+              display: grid !important;
+
+              grid-template-columns:
+                minmax(0, 1fr)
+                9mm
+                20mm !important;
+
+              column-gap: 1.5mm !important;
+
+              align-items:
+                start !important;
+
+              margin: 0 !important;
+
+              padding:
+                2mm 0 !important;
+
+              border-bottom:
+                1px dotted #999 !important;
+            }
+
+            .receipt-item-name {
+              min-width: 0 !important;
+
+              display: flex !important;
+
+              flex-direction:
+                column !important;
+            }
+
+            .receipt-item-name span {
+              display: block !important;
+
+              font-size: 9px !important;
+
+              line-height: 1.3 !important;
+
+              font-weight: 600 !important;
+
+              overflow-wrap:
+                anywhere !important;
+            }
+
+            .receipt-item-name small {
+              display: block !important;
+
+              margin-top: 0.5mm !important;
+
+              font-size: 8px !important;
+
+              line-height: 1.2 !important;
+            }
+
+            .receipt-qty {
+              text-align:
+                center !important;
+
+              font-size: 9px !important;
+
+              white-space:
+                nowrap !important;
+            }
+
+            .receipt-item > strong {
+              text-align:
+                right !important;
+
+              font-size: 9px !important;
+
+              line-height: 1.3 !important;
+
+              white-space:
+                nowrap !important;
+            }
+
+
+            /* --------------------------------------------
+               SUMMARY
+            -------------------------------------------- */
+
+            .receipt-summary {
+              width: 100% !important;
+
+              margin: 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-summary > div {
+              width: 100% !important;
+
+              display: flex !important;
+
+              justify-content:
+                space-between !important;
+
+              align-items:
+                center !important;
+
+              gap: 3mm !important;
+
+              margin:
+                1.5mm 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-summary span {
+              font-size: 9.5px !important;
+            }
+
+            .receipt-total {
+              border-top:
+                1px solid #000000 !important;
+
+              border-bottom:
+                1px solid #000000 !important;
+
+              margin-top:
+                2.5mm !important;
+
+              padding:
+                2.5mm 0 !important;
+            }
+
+            .receipt-total strong {
+              font-size: 12px !important;
+
+              font-weight: 700 !important;
+            }
+
+
+            /* --------------------------------------------
+               PAYMENT
+            -------------------------------------------- */
+
+            .receipt-payment {
+              width: 100% !important;
+
+              margin: 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-payment > strong {
+              display: block !important;
+
+              font-size: 9px !important;
+
+              line-height: 1.2 !important;
+
+              margin-bottom:
+                1.5mm !important;
+            }
+
+            .receipt-payment p {
+              margin:
+                0 0 1mm 0 !important;
+
+              padding: 0 !important;
+
+              font-size: 9.5px !important;
+
+              line-height: 1.3 !important;
+
+              overflow-wrap:
+                anywhere !important;
+            }
+
+
+            /* --------------------------------------------
+               FOOTER
+            -------------------------------------------- */
+
+            .receipt-footer {
+              width: 100% !important;
+
+              text-align:
+                center !important;
+
+              margin:
+                5mm 0 1mm 0 !important;
+
+              padding: 0 !important;
+            }
+
+            .receipt-footer strong {
+              display: block !important;
+
+              margin-bottom:
+                1mm !important;
+
+              font-size: 13px !important;
+
+              line-height: 1.2 !important;
+
+              font-weight: 700 !important;
+            }
+
+            .receipt-footer p {
+              margin:
+                1px 0 !important;
+
+              padding: 0 !important;
+
+              font-size: 8.5px !important;
+
+              line-height: 1.3 !important;
+            }
+
+            .receipt-footer .receipt-small {
+              margin-top:
+                2mm !important;
+
+              font-size: 8px !important;
+            }
+
+
+            /* --------------------------------------------
+               PAGE BREAK CONTROL
+            -------------------------------------------- */
+
+            #thermal-receipt,
+            .receipt-section,
+            .receipt-item,
+            .receipt-summary,
+            .receipt-footer {
+              break-inside: avoid !important;
+
+              page-break-inside:
+                avoid !important;
+            }
+
+          }
+
+        `}
+      </style>
+
     </div>
   );
 }

@@ -1,3 +1,5 @@
+// src/services/api.ts
+
 import { supabase } from '@/lib/supabase';
 
 import type {
@@ -6,11 +8,13 @@ import type {
   Review,
   Order,
   Coupon,
+  HeroBanner,
+  HeroBannerInput,
 } from '@/lib/types';
 
-/* =====================================================
-   API URL
-===================================================== */
+// ============================================================
+// API CONFIG
+// ============================================================
 
 const API_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, '') ||
@@ -18,55 +22,31 @@ const API_URL =
     ? 'https://thennai-manam-api.onrender.com'
     : '');
 
-if (!API_URL) {
-  console.error(
-    'VITE_API_URL is missing. Add it in Netlify Environment Variables and redeploy.'
-  );
-}
-
-/* =====================================================
-   API REQUEST HELPER
-===================================================== */
+// ============================================================
+// COMMON API REQUEST
+// ============================================================
 
 async function apiRequest(
   path: string,
   options: RequestInit = {}
 ) {
   if (!API_URL) {
-    throw new Error(
-      'API URL is not configured. Please set VITE_API_URL in Netlify.'
-    );
+    throw new Error('API URL is not configured.');
   }
-
-  /* -----------------------------------------------
-     Get current Supabase session
-  ------------------------------------------------ */
 
   const {
     data: { session },
-    error: sessionError,
   } = await supabase.auth.getSession();
 
-  if (sessionError) {
-    console.error(
-      '[AUTH] Failed to get Supabase session:',
-      sessionError
-    );
+  console.log('API SESSION:', {
+    hasSession: !!session,
+    hasToken: !!session?.access_token,
+    user: session?.user?.email,
+  });
 
-    throw new Error('Unable to get current session');
-  }
-
-  /* -----------------------------------------------
-     Headers
-  ------------------------------------------------ */
-
-  const headers = new Headers(options.headers || {});
+  const headers = new Headers(options.headers);
 
   headers.set('Content-Type', 'application/json');
-
-  /* -----------------------------------------------
-     Add Supabase access token
-  ------------------------------------------------ */
 
   if (session?.access_token) {
     headers.set(
@@ -75,157 +55,126 @@ async function apiRequest(
     );
   }
 
-  /* -----------------------------------------------
-     Request URL
-  ------------------------------------------------ */
-
-  const url = `${API_URL}${path}`;
-
-  console.log(
-    `[API] ${options.method || 'GET'} ${url}`
-  );
-
-  console.log(
-    '[AUTH] Session:',
-    session
-      ? {
-          userId: session.user?.id,
-          email: session.user?.email,
-          expiresAt: session.expires_at,
-        }
-      : null
-  );
-
-  const res = await fetch(url, {
+  const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
   });
 
-  /* -----------------------------------------------
-     Parse response
-  ------------------------------------------------ */
+  let body: any = {};
 
-  const body = await res
-    .json()
-    .catch(() => ({}));
-
-  /* -----------------------------------------------
-     Handle 401
-  ------------------------------------------------ */
-
-  if (res.status === 401) {
-    console.error(
-      '[API AUTH ERROR] 401',
-      body
-    );
-
-    throw new Error(
-      body?.error ||
-        'Invalid session. Please login again.'
-    );
+  try {
+    body = await response.json();
+  } catch {
+    body = {};
   }
 
-  /* -----------------------------------------------
-     Handle other errors
-  ------------------------------------------------ */
+  if (!response.ok) {
+    console.error('API ERROR:', {
+      status: response.status,
+      path,
+      body,
+    });
 
-  if (!res.ok) {
-    console.error(
-      `[API ERROR] ${res.status} ${res.statusText}`,
-      body
-    );
+    if (response.status === 401) {
+      throw new Error(
+        body?.error || 'Invalid session. Please login again.'
+      );
+    }
 
     throw new Error(
       body?.error ||
-        `Request failed (${res.status})`
+        `Request failed (${response.status})`
     );
   }
 
   return body;
 }
 
-/* =====================================================
-   RAZORPAY
-===================================================== */
+// ============================================================
+// RAZORPAY
+// ============================================================
 
 export async function createRazorpayOrder(
   amount: number
 ) {
-  return apiRequest(
-    '/api/payments/create-order',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        amount,
-      }),
-    }
-  );
+  return apiRequest('/api/payments/create-order', {
+    method: 'POST',
+    body: JSON.stringify({
+      amount,
+    }),
+  });
 }
+
 
 export async function verifyRazorpayPayment(
-  payload: any
+  payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    order?: unknown;
+  }
 ) {
-  return apiRequest(
-    '/api/payments/verify',
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }
-  );
+  return apiRequest('/api/payments/verify', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
-/* =====================================================
-   COD ORDER
-===================================================== */
+
+// ============================================================
+// COD ORDER
+// ============================================================
 
 export async function createCodOrder(
-  order: any
+  order: Omit<
+    Order,
+    'id' | 'created_at' | 'order_number'
+  >
 ) {
-  return apiRequest(
-    '/api/orders/cod',
-    {
-      method: 'POST',
-      body: JSON.stringify(order),
-    }
-  );
+  return apiRequest('/api/orders/cod', {
+    method: 'POST',
+    body: JSON.stringify(order),
+  });
 }
 
-/* =====================================================
-   CATEGORIES
-===================================================== */
+
+// ============================================================
+// CATEGORIES
+// ============================================================
 
 export async function getCategories(): Promise<Category[]> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('categories')
     .select('*')
-    .order('name');
+    .order('name', { ascending: true });
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data as Category[];
+  return (data || []) as Category[];
 }
 
-/* =====================================================
-   PRODUCTS
-===================================================== */
+
+// ============================================================
+// PRODUCTS
+// ============================================================
+
+export interface ProductFilters {
+  category?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  featured?: boolean;
+  bestSeller?: boolean;
+  sort?: string;
+  limit?: number;
+}
+
 
 export async function getProducts(
-  filters?: {
-    category?: string;
-    search?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    minRating?: number;
-    sort?: string;
-    featured?: boolean;
-    bestSeller?: boolean;
-    limit?: number;
-  }
+  filters: ProductFilters = {}
 ): Promise<Product[]> {
   let query = supabase
     .from('products')
@@ -234,21 +183,15 @@ export async function getProducts(
       category:categories(*)
     `);
 
-  /* Category */
-
-  if (filters?.category) {
+  if (filters.category) {
     query = query.eq(
       'category_id',
       filters.category
     );
   }
 
-  /* Search */
-
-  if (filters?.search) {
-    const search = filters.search
-      .replace(/,/g, '')
-      .trim();
+  if (filters.search) {
+    const search = filters.search.trim();
 
     if (search) {
       query = query.or(
@@ -257,87 +200,76 @@ export async function getProducts(
     }
   }
 
-  /* Minimum price */
-
-  if (filters?.minPrice !== undefined) {
+  if (
+    filters.minPrice !== undefined &&
+    filters.minPrice !== null
+  ) {
     query = query.gte(
       'price',
       filters.minPrice
     );
   }
 
-  /* Maximum price */
-
-  if (filters?.maxPrice !== undefined) {
+  if (
+    filters.maxPrice !== undefined &&
+    filters.maxPrice !== null
+  ) {
     query = query.lte(
       'price',
       filters.maxPrice
     );
   }
 
-  /* Minimum rating */
-
-  if (filters?.minRating !== undefined) {
+  if (
+    filters.minRating !== undefined &&
+    filters.minRating !== null
+  ) {
     query = query.gte(
       'rating',
       filters.minRating
     );
   }
 
-  /* Featured */
-
-  if (filters?.featured) {
+  if (filters.featured !== undefined) {
     query = query.eq(
       'featured',
-      true
+      filters.featured
     );
   }
 
-  /* Best Seller */
-
-  if (filters?.bestSeller) {
+  if (filters.bestSeller !== undefined) {
     query = query.eq(
       'best_seller',
-      true
+      filters.bestSeller
     );
   }
 
-  /* Sorting */
-
-  switch (filters?.sort) {
+  switch (filters.sort) {
     case 'price-low':
       query = query.order(
         'price',
-        {
-          ascending: true,
-        }
+        { ascending: true }
       );
       break;
 
     case 'price-high':
       query = query.order(
         'price',
-        {
-          ascending: false,
-        }
+        { ascending: false }
       );
       break;
 
     case 'rating':
       query = query.order(
         'rating',
-        {
-          ascending: false,
-        }
+        { ascending: false }
       );
       break;
 
     case 'newest':
       query = query.order(
         'created_at',
-        {
-          ascending: false,
-        }
+        { ascending: false }
       );
       break;
 
@@ -345,50 +277,40 @@ export async function getProducts(
       query = query
         .order(
           'best_seller',
-          {
-            ascending: false,
-          }
+          { ascending: false }
         )
         .order(
           'rating',
-          {
-            ascending: false,
-          }
+          { ascending: false }
         );
       break;
   }
 
-  /* Limit */
-
-  if (filters?.limit) {
-    query = query.limit(
-      filters.limit
-    );
+  if (
+    filters.limit !== undefined &&
+    filters.limit > 0
+  ) {
+    query = query.limit(filters.limit);
   }
 
-  const {
-    data,
-    error,
-  } = await query;
+  const { data, error } = await query;
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data as Product[];
+  return (data || []) as Product[];
 }
 
-/* =====================================================
-   SINGLE PRODUCT
-===================================================== */
+
+// ============================================================
+// SINGLE PRODUCT
+// ============================================================
 
 export async function getProductBySlug(
   slug: string
 ): Promise<Product | null> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('products')
     .select(`
       *,
@@ -398,62 +320,46 @@ export async function getProductBySlug(
     .maybeSingle();
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
   return data as Product | null;
 }
 
-/* =====================================================
-   REVIEWS
-===================================================== */
+
+// ============================================================
+// REVIEWS
+// ============================================================
 
 export async function getReviews(
   productId: string
 ): Promise<Review[]> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('reviews')
     .select('*')
-    .eq(
-      'product_id',
-      productId
-    )
-    .eq(
-      'approved',
-      true
-    )
-    .order(
-      'created_at',
-      {
-        ascending: false,
-      }
-    );
+    .eq('product_id', productId)
+    .eq('approved', true)
+    .order('created_at', {
+      ascending: false,
+    });
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data as Review[];
+  return (data || []) as Review[];
 }
 
-/* =====================================================
-   ADD REVIEW
-===================================================== */
 
 export async function addReview(
   productId: string,
-  userId: string,
+  userId: string | null,
   userName: string,
-  userLocation: string,
+  userLocation: string | null,
   rating: number,
   comment: string
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+) {
+  const { data, error } = await supabase
     .from('reviews')
     .insert({
       product_id: productId,
@@ -463,33 +369,32 @@ export async function addReview(
       rating,
       comment,
       approved: false,
-    });
+    })
+    .select()
+    .single();
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return data as Review;
 }
 
-/* =====================================================
-   CREATE ORDER
-===================================================== */
+
+// ============================================================
+// CREATE ORDER
+// ============================================================
 
 export async function createOrder(
   order: Omit<
     Order,
-    'id' |
-      'created_at' |
-      'order_number'
+    'id' | 'created_at' | 'order_number'
   >
 ): Promise<Order> {
-  if (
-    order.payment_method === 'cod'
-  ) {
-    const {
-      order: created,
-    } = await createCodOrder(order);
+  if (order.payment_method === 'cod') {
+    const result = await createCodOrder(order);
 
-    return created as Order;
+    return result.order as Order;
   }
 
   throw new Error(
@@ -497,76 +402,48 @@ export async function createOrder(
   );
 }
 
-/* =====================================================
-   USER ORDERS
-===================================================== */
+
+// ============================================================
+// USER ORDERS
+// ============================================================
 
 export async function getOrders(
-  userId: string
+  _userId?: string
 ): Promise<Order[]> {
-  /*
-    userId is intentionally not sent.
-    Backend identifies the logged-in user
-    from the Supabase access token.
-  */
+  const result = await apiRequest('/api/orders');
 
-  void userId;
-
-  const {
-    orders,
-  } = await apiRequest(
-    '/api/orders'
-  );
-
-  return orders as Order[];
+  return (result.orders || []) as Order[];
 }
 
-/* =====================================================
-   SINGLE ORDER
-===================================================== */
 
 export async function getOrderById(
   id: string
 ): Promise<Order | null> {
-  const {
-    order,
-  } = await apiRequest(
+  const result = await apiRequest(
     `/api/orders/${id}`
   );
 
-  return (order ?? null) as Order | null;
+  return (result.order || null) as Order | null;
 }
 
-/* =====================================================
-   CANCEL ORDER
-===================================================== */
 
 export async function cancelOrder(
   id: string
-): Promise<Order> {
-  const {
-    order,
-  } = await apiRequest(
+) {
+  return apiRequest(
     `/api/orders/${id}/cancel`,
     {
       method: 'PATCH',
     }
   );
-
-  return order as Order;
 }
 
-/* =====================================================
-   UPDATE ORDER ADDRESS
-===================================================== */
 
 export async function updateOrderAddress(
   id: string,
   address: Order['address']
-): Promise<Order> {
-  const {
-    order,
-  } = await apiRequest(
+) {
+  return apiRequest(
     `/api/orders/${id}/address`,
     {
       method: 'PATCH',
@@ -575,51 +452,38 @@ export async function updateOrderAddress(
       }),
     }
   );
-
-  return order as Order;
 }
 
-/* =====================================================
-   ADMIN ORDERS
-===================================================== */
+
+// ============================================================
+// ADMIN ORDERS
+// ============================================================
 
 export async function getAllOrders(): Promise<Order[]> {
-  const {
-    orders,
-  } = await apiRequest(
+  const result = await apiRequest(
     '/api/admin/orders'
   );
 
-  return orders as Order[];
+  return (result.orders || []) as Order[];
 }
 
-/* =====================================================
-   ADMIN SINGLE ORDER
-===================================================== */
 
 export async function getAdminOrderById(
   id: string
 ): Promise<Order | null> {
-  const {
-    order,
-  } = await apiRequest(
+  const result = await apiRequest(
     `/api/admin/orders/${id}`
   );
 
-  return (order ?? null) as Order | null;
+  return (result.order || null) as Order | null;
 }
 
-/* =====================================================
-   ADMIN UPDATE STATUS
-===================================================== */
 
 export async function updateOrderStatus(
   id: string,
   status: string
-): Promise<Order> {
-  const {
-    order,
-  } = await apiRequest(
+) {
+  return apiRequest(
     `/api/admin/orders/${id}/status`,
     {
       method: 'PATCH',
@@ -628,48 +492,33 @@ export async function updateOrderStatus(
       }),
     }
   );
-
-  return order as Order;
 }
 
-/* =====================================================
-   ADMIN UPDATE TRACKING
-===================================================== */
 
 export async function updateOrderTracking(
   id: string,
   tracking: {
-    courier_name: string;
-    tracking_id: string;
-    tracking_url: string;
+    courier_name?: string | null;
+    tracking_id?: string | null;
+    tracking_url?: string | null;
   }
-): Promise<Order> {
-  const {
-    order,
-  } = await apiRequest(
+) {
+  return apiRequest(
     `/api/admin/orders/${id}/tracking`,
     {
       method: 'PATCH',
       body: JSON.stringify(tracking),
     }
   );
-
-  return order as Order;
 }
 
-/* =====================================================
-   COUPONS
-===================================================== */
 
-/* =====================================================
-   COUPONS
-===================================================== */
+// ============================================================
+// COUPONS
+// ============================================================
 
 export async function getCoupons(): Promise<Coupon[]> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('coupons')
     .select('*')
     .order('created_at', {
@@ -677,32 +526,26 @@ export async function getCoupons(): Promise<Coupon[]> {
     });
 
   if (error) {
-    console.error('getCoupons error:', error);
-    throw error;
+    throw new Error(error.message);
   }
 
   return (data || []) as Coupon[];
 }
 
 
-/* =====================================================
-   VALIDATE COUPON
-===================================================== */
-
 export async function validateCoupon(
   code: string,
-  subtotal?: number
+  subtotal = 0
 ): Promise<Coupon | null> {
-  const cleanCode = code.trim().toUpperCase();
+  const cleanCode = code
+    .trim()
+    .toUpperCase();
 
   if (!cleanCode) {
     return null;
   }
 
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('coupons')
     .select('*')
     .eq('code', cleanCode)
@@ -710,90 +553,80 @@ export async function validateCoupon(
     .maybeSingle();
 
   if (error) {
-    console.error('validateCoupon error:', error);
-    throw error;
+    throw new Error(error.message);
   }
 
   if (!data) {
     return null;
   }
 
-  const coupon = data as Coupon & {
-    expires_at?: string | null;
-    minimum_order_amount?: number | null;
-    usage_limit?: number | null;
-    used_count?: number | null;
-  };
+  const coupon = data as Coupon;
 
-  /* Expiry check */
-  if (
-    coupon.expires_at &&
-    new Date(coupon.expires_at).getTime() < Date.now()
-  ) {
-    return null;
+  // Expiry check
+  if (coupon.expires_at) {
+    const expiryTime =
+      new Date(coupon.expires_at).getTime();
+
+    if (
+      Number.isFinite(expiryTime) &&
+      expiryTime < Date.now()
+    ) {
+      return null;
+    }
   }
 
-  /* Usage limit check */
+  // Usage limit check
   if (
-    coupon.usage_limit !== null &&
     coupon.usage_limit !== undefined &&
-    (coupon.used_count || 0) >= coupon.usage_limit
+    coupon.usage_limit !== null
   ) {
-    return null;
+    const usedCount =
+      coupon.used_count || 0;
+
+    if (
+      usedCount >= coupon.usage_limit
+    ) {
+      return null;
+    }
   }
 
-  /* Minimum order check */
-  if (
-    subtotal !== undefined &&
-    coupon.minimum_order_amount &&
-    subtotal < Number(coupon.minimum_order_amount)
-  ) {
-    throw new Error(
-      `Minimum order value is ₹${Number(
-        coupon.minimum_order_amount
-      ).toLocaleString('en-IN')}`
-    );
+  // Minimum order check
+  const minimumOrder =
+    coupon.minimum_order_amount ??
+    coupon.min_order ??
+    0;
+
+  if (subtotal < minimumOrder) {
+    return null;
   }
 
   return coupon;
 }
 
 
-/* =====================================================
-   CREATE COUPON
-===================================================== */
-
 export async function createCoupon(
   coupon: Partial<Coupon>
 ): Promise<Coupon> {
   const payload = {
     ...coupon,
-    code: String(coupon.code || '')
-      .trim()
-      .toUpperCase(),
+    code: coupon.code
+      ? coupon.code.trim().toUpperCase()
+      : undefined,
   };
 
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('coupons')
     .insert(payload)
-    .select('*')
+    .select()
     .single();
 
   if (error) {
-    console.error('createCoupon error:', error);
-    throw error;
+    throw new Error(error.message);
   }
 
   return data as Coupon;
 }
 
-
-/* =====================================================
-   UPDATE COUPON
-===================================================== */
 
 export async function updateCoupon(
   id: string,
@@ -803,386 +636,340 @@ export async function updateCoupon(
     ...updates,
     ...(updates.code
       ? {
-          code: String(updates.code)
+          code: updates.code
             .trim()
             .toUpperCase(),
         }
       : {}),
   };
 
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('coupons')
     .update(payload)
     .eq('id', id)
-    .select('*')
+    .select()
     .single();
 
   if (error) {
-    console.error('updateCoupon error:', error);
-    throw error;
+    throw new Error(error.message);
   }
 
   return data as Coupon;
 }
 
 
-/* =====================================================
-   DELETE COUPON
-===================================================== */
-
 export async function deleteCoupon(
   id: string
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+) {
+  const { error } = await supabase
     .from('coupons')
     .delete()
     .eq('id', id);
 
   if (error) {
-    console.error('deleteCoupon error:', error);
-    throw error;
+    throw new Error(error.message);
   }
+
+  return true;
 }
 
-
-/* =====================================================
-   TOGGLE COUPON
-===================================================== */
 
 export async function toggleCoupon(
   id: string,
   active: boolean
-): Promise<Coupon> {
-  const {
-    data,
-    error,
-  } = await supabase
+) {
+  const { data, error } = await supabase
     .from('coupons')
     .update({
       active,
     })
     .eq('id', id)
-    .select('*')
+    .select()
     .single();
 
   if (error) {
-    console.error('toggleCoupon error:', error);
-    throw error;
+    throw new Error(error.message);
   }
 
   return data as Coupon;
 }
-/* =====================================================
-   ADMIN REVIEWS
-===================================================== */
+
+
+// ============================================================
+// ADMIN REVIEWS
+// ============================================================
 
 export async function getAllReviews(): Promise<
   (Review & {
     product: Product | null;
   })[]
 > {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('reviews')
     .select('*')
-    .order(
-      'created_at',
-      {
-        ascending: false,
-      }
-    );
+    .order('created_at', {
+      ascending: false,
+    });
 
   if (error) {
-    console.error(
-      'getAllReviews error:',
-      error
-    );
-
-    throw error;
+    console.error('GET ALL REVIEWS ERROR:', error);
+    throw new Error(error.message);
   }
 
-  if (!data || data.length === 0) {
+  const reviews = (data || []) as Review[];
+
+  if (reviews.length === 0) {
     return [];
   }
 
   const productIds = [
     ...new Set(
-      data
-        .map(
-          (review: any) =>
-            review.product_id
-        )
+      reviews
+        .map((review) => review.product_id)
         .filter(Boolean)
     ),
   ];
 
-  let products: Product[] = [];
+  let productMap = new Map<
+    string,
+    Product
+  >();
 
   if (productIds.length > 0) {
     const {
-      data: productData,
-      error: productError,
+      data: products,
+      error: productsError,
     } = await supabase
       .from('products')
       .select('*')
-      .in(
-        'id',
-        productIds
+      .in('id', productIds);
+
+    if (productsError) {
+      console.error(
+        'GET REVIEW PRODUCTS ERROR:',
+        productsError
       );
 
-    if (productError) {
-      console.error(
-        'getAllReviews products error:',
-        productError
+      throw new Error(
+        productsError.message
       );
-    } else {
-      products =
-        (productData || []) as Product[];
     }
+
+    productMap = new Map(
+      ((products || []) as Product[]).map(
+        (product) => [
+          product.id,
+          product,
+        ]
+      )
+    );
   }
 
-  return data.map(
-    (review: any) => ({
-      ...review,
-      product:
-        products.find(
-          (p) =>
-            p.id ===
-            review.product_id
-        ) || null,
-    })
-  ) as (
-    Review & {
-      product: Product | null;
-    }
-  )[];
+  return reviews.map((review) => ({
+    ...review,
+    product:
+      productMap.get(review.product_id) ||
+      null,
+  }));
 }
-
-/* =====================================================
-   APPROVE REVIEW
-===================================================== */
-
 export async function approveReview(
   id: string
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+) {
+  const { data, error } = await supabase
     .from('reviews')
     .update({
       approved: true,
     })
-    .eq(
-      'id',
-      id
-    );
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) {
-    console.error(
-      'approveReview error:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
+
+  return data as Review;
 }
 
-/* =====================================================
-   DELETE REVIEW
-===================================================== */
 
 export async function deleteReview(
   id: string
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+) {
+  const { error } = await supabase
     .from('reviews')
     .delete()
-    .eq(
-      'id',
-      id
-    );
+    .eq('id', id);
 
   if (error) {
-    console.error(
-      'deleteReview error:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
+
+  return true;
 }
 
-/* =====================================================
-   ADMIN PROFILES
-===================================================== */
 
-export async function getAllProfiles(): Promise<any[]> {
-  const {
-    data,
-    error,
-  } = await supabase
+// ============================================================
+// ADMIN PROFILES
+// ============================================================
+
+export async function getAllProfiles() {
+  const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .order(
-      'created_at',
-      {
-        ascending: false,
-      }
-    );
+    .order('created_at', {
+      ascending: false,
+    });
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
   return data || [];
 }
 
-/* =====================================================
-   ADMIN PRODUCTS
-===================================================== */
 
-export async function getAllProductsWithCategory(): Promise<Product[]> {
-  const {
-    data,
-    error,
-  } = await supabase
+// ============================================================
+// ADMIN PRODUCTS
+// ============================================================
+
+export async function getAllProductsWithCategory(): Promise<
+  Product[]
+> {
+  const { data, error } = await supabase
     .from('products')
     .select(`
       *,
       category:categories(*)
     `)
-    .order(
-      'created_at',
-      {
-        ascending: false,
-      }
-    );
+    .order('created_at', {
+      ascending: false,
+    });
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data as Product[];
+  return (data || []) as Product[];
 }
+
 
 export async function createProduct(
   product: Partial<Product>
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+): Promise<Product> {
+  const { data, error } = await supabase
     .from('products')
-    .insert(product);
+    .insert(product)
+    .select(`
+      *,
+      category:categories(*)
+    `)
+    .single();
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return data as Product;
 }
+
 
 export async function updateProduct(
   id: string,
   updates: Partial<Product>
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+): Promise<Product> {
+  const { data, error } = await supabase
     .from('products')
     .update(updates)
-    .eq(
-      'id',
-      id
-    );
+    .eq('id', id)
+    .select(`
+      *,
+      category:categories(*)
+    `)
+    .single();
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return data as Product;
 }
+
 
 export async function deleteProduct(
   id: string
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+) {
+  const { error } = await supabase
     .from('products')
     .delete()
-    .eq(
-      'id',
-      id
-    );
+    .eq('id', id);
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return true;
 }
 
-/* =====================================================
-   ADMIN CATEGORIES
-===================================================== */
+
+// ============================================================
+// ADMIN CATEGORIES
+// ============================================================
 
 export async function createCategory(
   category: Partial<Category>
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+): Promise<Category> {
+  const { data, error } = await supabase
     .from('categories')
-    .insert(category);
+    .insert(category)
+    .select()
+    .single();
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return data as Category;
 }
+
 
 export async function updateCategory(
   id: string,
   updates: Partial<Category>
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+): Promise<Category> {
+  const { data, error } = await supabase
     .from('categories')
     .update(updates)
-    .eq(
-      'id',
-      id
-    );
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return data as Category;
 }
+
 
 export async function deleteCategory(
   id: string
-): Promise<void> {
-  const {
-    error,
-  } = await supabase
+) {
+  const { error } = await supabase
     .from('categories')
     .delete()
-    .eq(
-      'id',
-      id
-    );
+    .eq('id', id);
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
+
+  return true;
 }
 
-/* =====================================================
-   ADMIN DASHBOARD
-===================================================== */
+
+// ============================================================
+// ADMIN DASHBOARD
+// ============================================================
 
 export async function getDashboardStats(): Promise<{
   totalRevenue: number;
@@ -1197,23 +984,21 @@ export async function getDashboardStats(): Promise<{
   );
 }
 
-/* =====================================================
-   SALES REPORT
-===================================================== */
+
+// ============================================================
+// SALES REPORT
+// ============================================================
 
 export interface SalesReport {
   fromDate: string;
   toDate: string;
-
   totalRevenue: number;
   totalOrders: number;
   deliveredOrders: number;
   pendingOrders: number;
   cancelledOrders: number;
-
   totalProductsSold: number;
   totalCustomers: number;
-
   averageOrderValue: number;
 
   dailySales: {
@@ -1221,49 +1006,45 @@ export interface SalesReport {
     orders: number;
     revenue: number;
   }[];
+
+  orderSummary: {
+    id: string;
+    orderNumber: string;
+    customer: string;
+    date: string;
+    status: string;
+    amount: number;
+  }[];
 }
 
-/* =====================================================
-   GET SALES REPORT
-===================================================== */
 
 export async function getSalesReport(
   fromDate: string,
   toDate: string
 ): Promise<SalesReport> {
-  /* -----------------------------------------------
-     Validate dates
-  ------------------------------------------------ */
-
   if (!fromDate || !toDate) {
     throw new Error(
-      'From date and To date are required'
+      'From date and To date are required.'
     );
   }
 
   if (fromDate > toDate) {
     throw new Error(
-      'From date cannot be after To date'
+      'From date cannot be greater than To date.'
     );
   }
 
   const startDate =
-    `${fromDate}T00:00:00`;
+    new Date(`${fromDate}T00:00:00.000Z`);
 
   const endDate =
-    `${toDate}T23:59:59`;
+    new Date(`${toDate}T23:59:59.999Z`);
 
-  /* -----------------------------------------------
-     Fetch orders
-  ------------------------------------------------ */
-
-  const {
-    data: orders,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from('orders')
     .select(`
       id,
+      order_number,
       user_id,
       items,
       total,
@@ -1272,33 +1053,33 @@ export async function getSalesReport(
     `)
     .gte(
       'created_at',
-      startDate
+      startDate.toISOString()
     )
     .lte(
       'created_at',
-      endDate
+      endDate.toISOString()
     )
-    .order(
-      'created_at',
-      {
-        ascending: true,
-      }
-    );
+    .order('created_at', {
+      ascending: false,
+    });
 
   if (error) {
-    console.error(
-      'getSalesReport error:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
 
-  const safeOrders = orders || [];
+  const safeOrders = data || [];
 
-  /* -----------------------------------------------
-     COUNTS
-  ------------------------------------------------ */
+  const cancelledStatuses = [
+    'cancelled',
+    'canceled',
+  ];
+
+  const activeOrders = safeOrders.filter(
+    (order) =>
+      !cancelledStatuses.includes(
+        String(order.order_status).toLowerCase()
+      )
+  );
 
   const totalOrders =
     safeOrders.length;
@@ -1308,289 +1089,155 @@ export async function getSalesReport(
       (order) =>
         String(
           order.order_status
-        ).toLowerCase() ===
-        'delivered'
+        ).toLowerCase() === 'delivered'
     ).length;
 
+  const pendingStatuses = [
+    'pending',
+    'processing',
+    'confirmed',
+    'shipped',
+    'out for delivery',
+  ];
+
   const pendingOrders =
-    safeOrders.filter(
-      (order) =>
-        [
-          'pending',
-          'processing',
-          'confirmed',
-          'shipped',
-        ].includes(
-          String(
-            order.order_status
-          ).toLowerCase()
-        )
+    safeOrders.filter((order) =>
+      pendingStatuses.includes(
+        String(
+          order.order_status
+        ).toLowerCase()
+      )
     ).length;
 
   const cancelledOrders =
-    safeOrders.filter(
-      (order) =>
+    safeOrders.filter((order) =>
+      cancelledStatuses.includes(
         String(
           order.order_status
-        ).toLowerCase() ===
-        'cancelled'
+        ).toLowerCase()
+      )
     ).length;
 
-  /* -----------------------------------------------
-     REVENUE
-  ------------------------------------------------ */
-
   const totalRevenue =
-    safeOrders.reduce(
-      (
-        sum,
-        order
-      ) => {
-        const status =
-          String(
-            order.order_status
-          ).toLowerCase();
-
-        if (
-          status ===
-          'cancelled'
-        ) {
-          return sum;
-        }
-
-        return (
-          sum +
-          (Number(
-            order.total
-          ) || 0)
-        );
-      },
+    activeOrders.reduce(
+      (sum, order) =>
+        sum + Number(order.total || 0),
       0
     );
 
-  /* -----------------------------------------------
-     AVERAGE ORDER VALUE
-  ------------------------------------------------ */
-
-  const revenueOrders =
-    safeOrders.filter(
-      (order) =>
-        String(
-          order.order_status
-        ).toLowerCase() !==
-        'cancelled'
-    );
-
   const averageOrderValue =
-    revenueOrders.length > 0
-      ? totalRevenue /
-        revenueOrders.length
+    activeOrders.length > 0
+      ? totalRevenue / activeOrders.length
       : 0;
 
-  /* -----------------------------------------------
-     DAILY SALES
-  ------------------------------------------------ */
+  let totalProductsSold = 0;
 
-  const dailyMap: Record<
+  for (const order of activeOrders) {
+    const items = Array.isArray(order.items)
+      ? order.items
+      : [];
+
+    for (const item of items) {
+      totalProductsSold += Number(
+        item?.quantity || 0
+      );
+    }
+  }
+
+  const uniqueCustomers = new Set(
+    activeOrders
+      .map((order) => order.user_id)
+      .filter(Boolean)
+  );
+
+  const totalCustomers =
+    uniqueCustomers.size;
+
+  const dailySalesMap = new Map<
     string,
     {
       orders: number;
       revenue: number;
     }
-  > = {};
+  >();
 
-  safeOrders.forEach(
-    (order) => {
-      const status =
-        String(
-          order.order_status
-        ).toLowerCase();
-
-      if (
-        status ===
-        'cancelled'
-      ) {
-        return;
-      }
-
-      const date =
-        new Date(
-          order.created_at
-        )
-          .toISOString()
-          .split('T')[0];
-
-      if (!dailyMap[date]) {
-        dailyMap[date] = {
-          orders: 0,
-          revenue: 0,
-        };
-      }
-
-      dailyMap[date].orders += 1;
-
-      dailyMap[date].revenue +=
-        Number(
-          order.total
-        ) || 0;
-    }
-  );
-
-  const dailySales =
-    Object.entries(
-      dailyMap
+  for (const order of activeOrders) {
+    const date = new Date(
+      order.created_at
     )
-      .sort(
-        (
-          [dateA],
-          [dateB]
-        ) =>
-          dateA.localeCompare(
-            dateB
-          )
-      )
-      .map(
-        (
-          [
-            date,
-            value,
-          ]
-        ) => ({
-          date,
-          orders:
-            value.orders,
-          revenue:
-            value.revenue,
-        })
-      );
+      .toISOString()
+      .slice(0, 10);
 
-  /* -----------------------------------------------
-     PRODUCTS SOLD
-  ------------------------------------------------ */
+    const existing =
+      dailySalesMap.get(date) || {
+        orders: 0,
+        revenue: 0,
+      };
 
-  const totalProductsSold =
-    safeOrders.reduce(
-      (
-        total,
-        order
-      ) => {
-        const status =
-          String(
-            order.order_status
-          ).toLowerCase();
-
-        if (
-          status ===
-          'cancelled'
-        ) {
-          return total;
-        }
-
-        const items =
-          Array.isArray(
-            order.items
-          )
-            ? order.items
-            : [];
-
-        const itemQuantity =
-          items.reduce(
-            (
-              itemTotal: number,
-              item: any
-            ) =>
-              itemTotal +
-              (Number(
-                item.quantity
-              ) || 0),
-            0
-          );
-
-        return (
-          total +
-          itemQuantity
-        );
-      },
-      0
+    existing.orders += 1;
+    existing.revenue += Number(
+      order.total || 0
     );
 
-  /* -----------------------------------------------
-     UNIQUE CUSTOMERS
-  ------------------------------------------------ */
-
-  const customerIds =
-    new Set(
-      safeOrders
-        .filter(
-          (order) =>
-            String(
-              order.order_status
-            ).toLowerCase() !==
-            'cancelled'
-        )
-        .map(
-          (order) =>
-            order.user_id
-        )
-        .filter(Boolean)
+    dailySalesMap.set(
+      date,
+      existing
     );
+  }
 
-  const totalCustomers =
-    customerIds.size;
+  const dailySales = Array.from(
+    dailySalesMap.entries()
+  )
+    .sort(([a], [b]) =>
+      a.localeCompare(b)
+    )
+    .map(([date, values]) => ({
+      date,
+      orders: values.orders,
+      revenue: values.revenue,
+    }));
 
-  /* -----------------------------------------------
-     RETURN
-  ------------------------------------------------ */
+  const orderSummary =
+    safeOrders.map((order) => ({
+      id: order.id,
+      orderNumber:
+        order.order_number ||
+        order.id,
+      customer:
+        order.user_id
+          ? 'Customer'
+          : 'Guest',
+      date: order.created_at,
+      status: order.order_status,
+      amount: Number(
+        order.total || 0
+      ),
+    }));
 
   return {
     fromDate,
     toDate,
-
     totalRevenue,
     totalOrders,
     deliveredOrders,
     pendingOrders,
     cancelledOrders,
-
     totalProductsSold,
     totalCustomers,
-
     averageOrderValue,
-
     dailySales,
+    orderSummary,
   };
 }
 
-// =====================================================
+
+// ============================================================
 // HERO BANNERS
-// =====================================================
+// ============================================================
 
-export interface HeroBanner {
-  id: string;
-  title: string | null;
-  subtitle: string | null;
-  offer_text: string | null;
-
-  desktop_image_url: string;
-  mobile_image_url: string | null;
-
-  button_text: string | null;
-  button_link: string | null;
-
-  sort_order: number;
-  is_active: boolean;
-
-  created_at: string;
-  updated_at: string;
-}
-
-
-// =====================================================
-// GET ACTIVE HERO BANNERS
-// Used by Home page
-// =====================================================
-
-export async function getHeroBanners(): Promise<HeroBanner[]> {
+export async function getHeroBanners(): Promise<
+  HeroBanner[]
+> {
   const { data, error } = await supabase
     .from('hero_banners')
     .select('*')
@@ -1600,24 +1247,16 @@ export async function getHeroBanners(): Promise<HeroBanner[]> {
     });
 
   if (error) {
-    console.error(
-      'GET HERO BANNERS ERROR:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data || [];
+  return (data || []) as HeroBanner[];
 }
 
 
-// =====================================================
-// GET ALL HERO BANNERS
-// Used by Admin
-// =====================================================
-
-export async function getAllHeroBanners(): Promise<HeroBanner[]> {
+export async function getAllHeroBanners(): Promise<
+  HeroBanner[]
+> {
   const { data, error } = await supabase
     .from('hero_banners')
     .select('*')
@@ -1626,30 +1265,19 @@ export async function getAllHeroBanners(): Promise<HeroBanner[]> {
     });
 
   if (error) {
-    console.error(
-      'GET ALL HERO BANNERS ERROR:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data || [];
+  return (data || []) as HeroBanner[];
 }
 
-
-// =====================================================
-// CREATE HERO BANNER
-// =====================================================
 
 export async function createHeroBanner(
   banner: Omit<
     HeroBanner,
-    'id' |
-    'created_at' |
-    'updated_at'
+    'id' | 'created_at' | 'updated_at'
   >
-) {
+): Promise<HeroBanner> {
   const { data, error } = await supabase
     .from('hero_banners')
     .insert(banner)
@@ -1657,39 +1285,17 @@ export async function createHeroBanner(
     .single();
 
   if (error) {
-    console.error(
-      'CREATE HERO BANNER ERROR:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data;
+  return data as HeroBanner;
 }
-export type HeroBannerInput = {
-  title?: string | null;
-  subtitle?: string | null;
-  offer_text?: string | null;
 
-  desktop_image_url: string;
-  mobile_image_url?: string | null;
-
-  button_text?: string | null;
-  button_link?: string | null;
-
-  sort_order?: number;
-  is_active?: boolean;
-};
-
-// =====================================================
-// UPDATE HERO BANNER
-// =====================================================
 
 export async function updateHeroBanner(
   id: string,
-  updates: Partial<HeroBanner>
-) {
+  updates: HeroBannerInput
+): Promise<HeroBanner> {
   const { data, error } = await supabase
     .from('hero_banners')
     .update({
@@ -1701,21 +1307,12 @@ export async function updateHeroBanner(
     .single();
 
   if (error) {
-    console.error(
-      'UPDATE HERO BANNER ERROR:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
 
-  return data;
+  return data as HeroBanner;
 }
 
-
-// =====================================================
-// DELETE HERO BANNER
-// =====================================================
 
 export async function deleteHeroBanner(
   id: string
@@ -1726,107 +1323,85 @@ export async function deleteHeroBanner(
     .eq('id', id);
 
   if (error) {
-    console.error(
-      'DELETE HERO BANNER ERROR:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
+
+  return true;
 }
 
 
-// =====================================================
-// UPLOAD HERO IMAGE
-// =====================================================
+// ============================================================
+// HERO BANNER IMAGE UPLOAD
+// ============================================================
 
 export async function uploadHeroBannerImage(
   file: File,
   type: 'desktop' | 'mobile'
 ): Promise<string> {
-
   const extension =
-    file.name.split('.').pop()?.toLowerCase() ||
+    file.name.split('.').pop() ||
     'jpg';
 
   const fileName =
-    `${crypto.randomUUID()}.${extension}`;
-
-  const filePath =
-    `${type}/${fileName}`;
+    `${type}/${crypto.randomUUID()}.${extension}`;
 
   const { error } =
     await supabase.storage
       .from('hero-banners')
-      .upload(filePath, file, {
+      .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
       });
 
   if (error) {
-    console.error(
-      'HERO IMAGE UPLOAD ERROR:',
-      error
-    );
-
-    throw error;
+    throw new Error(error.message);
   }
 
-  const { data } =
+  const {
+    data: publicUrlData,
+  } =
     supabase.storage
       .from('hero-banners')
-      .getPublicUrl(filePath);
+      .getPublicUrl(fileName);
 
-  if (!data?.publicUrl) {
-    throw new Error(
-      'Unable to get uploaded image URL'
-    );
-  }
-
-  return data.publicUrl;
+  return publicUrlData.publicUrl;
 }
 
 
-// =====================================================
-// DELETE HERO IMAGE FROM STORAGE
-// =====================================================
+// ============================================================
+// DELETE HERO BANNER IMAGE
+// ============================================================
 
 export async function deleteHeroBannerImage(
-  imageUrl: string | null
+  imageUrl: string
 ) {
-  if (!imageUrl) return;
+  const marker =
+    '/storage/v1/object/public/hero-banners/';
 
-  try {
-    const marker =
-      '/storage/v1/object/public/hero-banners/';
+  const markerIndex =
+    imageUrl.indexOf(marker);
 
-    const index =
-      imageUrl.indexOf(marker);
-
-    if (index === -1) return;
-
-    const filePath =
-      imageUrl.substring(
-        index + marker.length
-      );
-
-    if (!filePath) return;
-
-    const { error } =
-      await supabase.storage
-        .from('hero-banners')
-        .remove([filePath]);
-
-    if (error) {
-      console.error(
-        'DELETE HERO IMAGE ERROR:',
-        error
-      );
-    }
-  } catch (error) {
-    console.error(
-      'DELETE HERO IMAGE ERROR:',
-      error
-    );
+  if (markerIndex === -1) {
+    return false;
   }
+
+  const filePath =
+    imageUrl.slice(
+      markerIndex + marker.length
+    );
+
+  if (!filePath) {
+    return false;
+  }
+
+  const { error } =
+    await supabase.storage
+      .from('hero-banners')
+      .remove([filePath]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
 }

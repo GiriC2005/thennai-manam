@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 interface ScrollRevealProps {
   children: ReactNode;
@@ -20,6 +25,7 @@ export default function ScrollReveal({
   className = '',
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
+
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -27,8 +33,17 @@ export default function ScrollReveal({
 
     if (!element) return;
 
+    // Fallback for browsers where IntersectionObserver
+    // is unavailable.
+    if (!('IntersectionObserver' in window)) {
+      setVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
+        if (!entry) return;
+
         if (entry.isIntersecting) {
           setVisible(true);
 
@@ -40,18 +55,22 @@ export default function ScrollReveal({
         }
       },
       {
-        threshold: 0.15,
-        rootMargin: '0px 0px -80px 0px',
+        threshold: 0.05,
+        rootMargin: '0px 0px -20px 0px',
       }
     );
 
     observer.observe(element);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [once]);
 
   const getTransform = () => {
-    if (visible) return 'translate3d(0, 0, 0)';
+    if (visible) {
+      return 'translate3d(0, 0, 0)';
+    }
 
     if (direction === 'left') {
       return `translate3d(-${distance}px, 0, 0)`;
@@ -67,16 +86,18 @@ export default function ScrollReveal({
   return (
     <div
       ref={ref}
-      className={className}
+      className={`scroll-reveal ${className}`}
       style={{
         opacity: visible ? 1 : 0,
         transform: getTransform(),
-        transition: `
-          opacity ${duration}ms cubic-bezier(0.22, 1, 0.36, 1),
-          transform ${duration}ms cubic-bezier(0.22, 1, 0.36, 1)
-        `,
+        transitionProperty: 'opacity, transform',
+        transitionDuration: `${duration}ms`,
+        transitionTimingFunction:
+          'cubic-bezier(0.22, 1, 0.36, 1)',
         transitionDelay: `${delay}ms`,
-        willChange: 'opacity, transform',
+        willChange: visible
+          ? 'auto'
+          : 'opacity, transform',
       }}
     >
       {children}

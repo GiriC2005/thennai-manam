@@ -13,7 +13,7 @@ import {
   TicketPercent,
   Image,
 } from 'lucide-react';
-
+import AdminOrderNotification from '@/pages/admin/AdminOrderNotification';
 import {
   getAllOrders,
   getDashboardStats,
@@ -183,8 +183,10 @@ export default function AdminDashboard() {
 },
   ];
 
-  return (
-    <div className="space-y-8">
+ return (
+  <div className="space-y-8">
+
+    <AdminOrderNotification />
 
      {/* HEADER */}
 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

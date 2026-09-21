@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -425,19 +424,20 @@ export default function Shop() {
       {/* =================================================
           HEADER
       ================================================= */}
-       <ScrollReveal>
-      <div className="mb-5 sm:mb-8">
 
-        <h1 className="font-heading text-3xl lg:text-4xl text-ink mb-2">
-          Shop
-        </h1>
+      <ScrollReveal>
+        <div className="mb-5 sm:mb-8">
 
-        <p className="text-sm sm:text-base text-ink-soft">
-          Wood-pressed coconut oil from Pollachi farms
-        </p>
+          <h1 className="font-heading text-3xl lg:text-4xl text-ink mb-2">
+            Shop
+          </h1>
 
-      </div>
-       </ScrollReveal>
+          <p className="text-sm sm:text-base text-ink-soft">
+            Wood-pressed coconut oil from Pollachi farms
+          </p>
+
+        </div>
+      </ScrollReveal>
 
       {/* =================================================
           SEARCH
@@ -463,25 +463,26 @@ export default function Shop() {
           />
 
           <input
-  id="shop-product-search"
-  name="product-search"
-  type="search"
-  defaultValue={search}
-  placeholder="Search products..."
-  autoComplete="off"
-  onChange={(e) =>
-    updateParam(
-      'q',
-      e.target.value
-    )
-  }
-  className="
-    input-field
-    pl-10
-    sm:pl-12
-    text-sm
-  "
-/>
+            id="shop-product-search"
+            name="product-search"
+            type="search"
+            defaultValue={search}
+            placeholder="Search products..."
+            autoComplete="off"
+            onChange={(e) =>
+              updateParam(
+                'q',
+                e.target.value
+              )
+            }
+            className="
+              input-field
+              pl-10
+              sm:pl-12
+              text-sm
+            "
+          />
+
         </div>
 
       </div>
@@ -606,6 +607,7 @@ export default function Shop() {
               <option value="newest">
                 Newest
               </option>
+
             </select>
 
           </div>
@@ -685,12 +687,14 @@ export default function Shop() {
             >
 
               {products.map(
-                (product) => (
-                  
+                (product, index) => (
+
                   <ProductCard
                     key={product.id}
                     product={product}
+                    imagePriority={index < 4}
                   />
+
                 )
               )}
 
