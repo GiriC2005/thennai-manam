@@ -116,23 +116,24 @@ export default function Home() {
      AOS INITIALIZATION
   ========================================= */
 
-  useEffect(() => {
-    AOS.init({
-      duration: 800,
-      easing: 'ease-out-cubic',
-      once: true,
-      offset: 70,
-      delay: 0,
-      disable: false,
-    });
+ useEffect(() => {
+  AOS.init({
+    duration: 800,
+    easing: 'ease-out-cubic',
+    once: true,
+    offset: 70,
+    delay: 0,
+    disable: false,
+    mirror: false,
+    anchorPlacement: 'top-bottom',
+  });
 
-    const timer = setTimeout(() => {
-      AOS.refresh();
-    }, 500);
+  const timer = setTimeout(() => {
+    AOS.refreshHard();
+  }, 500);
 
-    return () => clearTimeout(timer);
-  }, []);
-
+  return () => clearTimeout(timer);
+}, []);
 
   /* =========================================
      LOAD PRODUCTS + CATEGORIES + HERO
@@ -223,20 +224,18 @@ export default function Home() {
      REFRESH AOS
   ========================================= */
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      AOS.refresh();
-    }, 300);
+ useEffect(() => {
+  const timer = setTimeout(() => {
+    AOS.refreshHard();
+  }, 300);
 
-    return () => clearTimeout(timer);
-  }, [
-    categories,
-    bestSellers,
-    reviews,
-    heroBanners,
-  ]);
-
-
+  return () => clearTimeout(timer);
+}, [
+  categories,
+  bestSellers,
+  reviews,
+  heroBanners,
+]);
   return (
     <div className="overflow-x-hidden">
 
